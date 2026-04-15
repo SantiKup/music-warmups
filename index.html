@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light" />
+    <title>Sight Reading Warm-Ups</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#app">Skip to content</a>
+
+    <div class="app-shell" id="app">
+      <header class="topbar" role="banner">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true">♪</div>
+          <div class="brand-text">
+            <div class="brand-title">Sight Reading Warm-Ups</div>
+            <div class="brand-subtitle">Choose. Show. Read.</div>
+          </div>
+        </div>
+        <div class="topbar-actions">
+          <button class="btn btn-ghost" id="resetBtnTop" type="button" title="Reset selections">
+            Reset
+          </button>
+        </div>
+      </header>
+
+      <main class="main" role="main">
+        <!-- LANDING -->
+        <section class="screen is-active" id="screenLanding" aria-labelledby="landingTitle">
+          <div class="card hero">
+            <div class="hero-badge">In-class warm-ups</div>
+            <h1 class="hero-title" id="landingTitle">Sight Reading Warm-Ups</h1>
+            <p class="hero-subtitle">
+              Select a musical style, your instrument, and a difficulty level to instantly open the
+              correct warm-up sheet.
+            </p>
+            <div class="hero-actions">
+              <button class="btn btn-primary" id="startBtn" type="button">Start</button>
+              <button class="btn btn-ghost" id="howItWorksBtn" type="button">How it works</button>
+            </div>
+          </div>
+
+          <div class="card info" id="howItWorksPanel" hidden>
+            <h2 class="card-title">How it works</h2>
+            <p class="muted">
+              This site does <strong>not</strong> generate music. Your teacher uploads images for each
+              combination. If a warm-up hasn’t been added yet, you’ll see a friendly message instead.
+            </p>
+          </div>
+        </section>
+
+        <!-- SELECTIONS -->
+        <section class="screen" id="screenSelect" aria-labelledby="selectTitle">
+          <div class="card">
+            <div class="card-header">
+              <h2 class="card-title" id="selectTitle">Choose your warm-up</h2>
+              <p class="card-subtitle">Pick one option in each section.</p>
+            </div>
+
+            <div class="grid">
+              <section class="picker" aria-labelledby="styleTitle">
+                <div class="picker-head">
+                  <h3 class="picker-title" id="styleTitle">Musical style</h3>
+                  <div class="picker-selected" id="styleSelected">Not selected</div>
+                </div>
+                <div class="pill-row" id="styleOptions" role="list"></div>
+              </section>
+
+              <section class="picker" aria-labelledby="instrumentTitle">
+                <div class="picker-head">
+                  <h3 class="picker-title" id="instrumentTitle">Instrument</h3>
+                  <div class="picker-selected" id="instrumentSelected">Not selected</div>
+                </div>
+                <div class="pill-row" id="instrumentOptions" role="list"></div>
+              </section>
+
+              <section class="picker" aria-labelledby="difficultyTitle">
+                <div class="picker-head">
+                  <h3 class="picker-title" id="difficultyTitle">Difficulty</h3>
+                  <div class="picker-selected" id="difficultySelected">Not selected</div>
+                </div>
+                <div class="pill-row" id="difficultyOptions" role="list"></div>
+              </section>
+            </div>
+
+            <div class="actions">
+              <button class="btn btn-ghost" id="backToLandingBtn" type="button">Back</button>
+              <div class="actions-right">
+                <button class="btn btn-ghost" id="resetBtn" type="button">Reset</button>
+                <button class="btn btn-primary" id="showBtn" type="button" disabled>
+                  Show Warm-Up
+                </button>
+              </div>
+            </div>
+
+            <p class="helper" id="helperText" role="status" aria-live="polite">
+              Select style, instrument, and difficulty to continue.
+            </p>
+          </div>
+        </section>
+
+        <!-- RESULT -->
+        <section class="screen" id="screenResult" aria-labelledby="resultTitle">
+          <div class="card">
+            <div class="card-header">
+              <h2 class="card-title" id="resultTitle">Warm-up</h2>
+              <div class="chips" id="resultChips" aria-label="Selected options"></div>
+            </div>
+
+            <div class="result">
+              <div class="result-message" id="missingMessage" hidden>
+                <div class="empty-state">
+                  <div class="empty-icon" aria-hidden="true">𝄞</div>
+                  <div>
+                    <div class="empty-title">This warm-up has not been added yet.</div>
+                    <div class="empty-subtitle">
+                      Try another combination, or check back later.
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <figure class="sheet" id="sheetFigure" hidden>
+                <img
+                  id="sheetImage"
+                  alt="Selected warm-up sheet music"
+                  loading="eager"
+                  decoding="async"
+                />
+                <figcaption class="muted">
+                  Tip: click the image to zoom.
+                </figcaption>
+              </figure>
+            </div>
+
+            <div class="actions">
+              <button class="btn btn-ghost" id="backToSelectBtn" type="button">Back</button>
+              <div class="actions-right">
+                <button class="btn btn-primary" id="chooseAnotherBtn" type="button">
+                  Choose Another
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <footer class="footer">
+        <span class="muted">For classroom use • static site</span>
+      </footer>
+    </div>
+
+    <!-- Lightbox (optional zoom) -->
+    <dialog class="lightbox" id="lightbox">
+      <button class="lightbox-close btn btn-ghost" id="lightboxClose" type="button">Close</button>
+      <img id="lightboxImg" alt="Warm-up sheet music (zoomed)" />
+    </dialog>
+
+    <script src="script.js"></script>
+  </body>
+</html>
+
