@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Sight Reading Warm-Ups (static)
+   Class Grooves (static)
    - Role-based flow: Student or Teacher
    - Teacher uploads use localStorage (front-end only persistence)
    ========================================================================== */
