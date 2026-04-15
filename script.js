@@ -18,7 +18,8 @@ const INSTRUMENTS = [
   "Flute",
   "Drums",
 ];
-const DIFFICULTIES = ["Easy", "Hard"];
+// Difficulty scale labels: 1 (easiest) -> 3 (hardest)
+const DIFFICULTIES = ["1", "2", "3"];
 
 const LOCAL_STORAGE_KEY = "musicWarmupsByCombo";
 const TEACHER_USERNAME = "JGibbs";
@@ -45,7 +46,7 @@ function buildDefaultWarmups() {
       }
     }
   }
-  delete map.Rock.Oboe.Hard;
+  delete map.Rock.Oboe["3"];
   return map;
 }
 
