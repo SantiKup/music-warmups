@@ -1,13 +1,7 @@
 /* ==========================================================================
    Sight Reading Warm-Ups (static)
-
-   HOW TO ADD REAL WARM-UP IMAGES LATER
-   - Put image files in the `assets/` folder (jpg/png/webp/svg).
-   - Update the `WARMUPS` object below to point each combination to the correct file path.
-     Example:
-       WARMUPS["Groovy"]["Tenor Sax"]["Easy"] = "assets/groovy_tenor_easy.jpg";
-   - If a combination is missing from WARMUPS, the UI will show:
-       "This warm-up has not been added yet."
+   - Role-based flow: Student or Teacher
+   - Teacher uploads use localStorage (front-end only persistence)
    ========================================================================== */
 
 const STYLES = ["Groovy", "Swing", "Ballad", "Rock"];
@@ -26,7 +20,10 @@ const INSTRUMENTS = [
 ];
 const DIFFICULTIES = ["Easy", "Hard"];
 
-// Placeholder files (you can replace these images later)
+const LOCAL_STORAGE_KEY = "musicWarmupsByCombo";
+const TEACHER_USERNAME = "JGibbs";
+const TEACHER_PASSWORD = "Music.site2026JG";
+
 const STYLE_PLACEHOLDER = {
   Groovy: "assets/groovy_placeholder.svg",
   Swing: "assets/swing_placeholder.svg",
@@ -34,10 +31,8 @@ const STYLE_PLACEHOLDER = {
   Rock: "assets/rock_placeholder.svg",
 };
 
-// Mapping: style -> instrument -> difficulty -> image path
-// Note: this demo includes MOST combinations mapped to placeholders, and one intentionally missing
-// (Rock / Oboe / Hard) so you can see the friendly "not added yet" message working.
 const WARMUPS = buildDefaultWarmups();
+let teacherWarmups = loadTeacherWarmups();
 
 function buildDefaultWarmups() {
   const map = {};
@@ -50,67 +45,112 @@ function buildDefaultWarmups() {
       }
     }
   }
-
-  // Example "missing" entry (delete this line later if you want every combination to exist)
   delete map.Rock.Oboe.Hard;
-
   return map;
 }
 
-function getWarmupPath(style, instrument, difficulty) {
-  return WARMUPS?.[style]?.[instrument]?.[difficulty] ?? null;
+function ensureNestedKey(obj, style, instrument) {
+  if (!obj[style]) obj[style] = {};
+  if (!obj[style][instrument]) obj[style][instrument] = {};
 }
 
-// ----- UI wiring -----
-const $ = (id) => document.getElementById(id);
+// localStorage load: this is where teacher-saved warm-ups are restored on page load.
+function loadTeacherWarmups() {
+  try {
+    const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
 
+// localStorage save: this persists teacher uploads for this browser.
+function persistTeacherWarmups() {
+  localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(teacherWarmups));
+}
+
+function getWarmupPath(style, instrument, difficulty) {
+  // Student reads teacher-uploaded warm-up first, then static fallback map.
+  return teacherWarmups?.[style]?.[instrument]?.[difficulty] ?? WARMUPS?.[style]?.[instrument]?.[difficulty] ?? null;
+}
+
+const $ = (id) => document.getElementById(id);
+const topbar = document.querySelector(".topbar");
+
+const screenRole = $("screenRole");
 const screenLanding = $("screenLanding");
 const screenSelect = $("screenSelect");
 const screenResult = $("screenResult");
+const screenTeacherLogin = $("screenTeacherLogin");
+const screenTeacherAdmin = $("screenTeacherAdmin");
+const ALL_SCREENS = [screenRole, screenLanding, screenSelect, screenResult, screenTeacherLogin, screenTeacherAdmin];
+
+const homeBtn = $("homeBtn");
+const resetBtnTop = $("resetBtnTop");
+const studentRoleBtn = $("studentRoleBtn");
+const teacherRoleBtn = $("teacherRoleBtn");
 
 const startBtn = $("startBtn");
 const howItWorksBtn = $("howItWorksBtn");
 const howItWorksPanel = $("howItWorksPanel");
+const backToLandingBtn = $("backToLandingBtn");
+const resetBtn = $("resetBtn");
+const showBtn = $("showBtn");
+const helperText = $("helperText");
 
 const styleOptions = $("styleOptions");
 const instrumentOptions = $("instrumentOptions");
 const difficultyOptions = $("difficultyOptions");
-
 const styleSelected = $("styleSelected");
 const instrumentSelected = $("instrumentSelected");
 const difficultySelected = $("difficultySelected");
 
-const backToLandingBtn = $("backToLandingBtn");
-const resetBtn = $("resetBtn");
-const resetBtnTop = $("resetBtnTop");
-const showBtn = $("showBtn");
-const helperText = $("helperText");
-
 const backToSelectBtn = $("backToSelectBtn");
 const chooseAnotherBtn = $("chooseAnotherBtn");
-
 const resultChips = $("resultChips");
 const missingMessage = $("missingMessage");
 const sheetFigure = $("sheetFigure");
 const sheetImage = $("sheetImage");
 
+const teacherLoginForm = $("teacherLoginForm");
+const teacherUsername = $("teacherUsername");
+const teacherPassword = $("teacherPassword");
+const teacherLoginError = $("teacherLoginError");
+const teacherLoginBackBtn = $("teacherLoginBackBtn");
+const teacherLogoutBtn = $("teacherLogoutBtn");
+
+const adminStyleOptions = $("adminStyleOptions");
+const adminInstrumentOptions = $("adminInstrumentOptions");
+const adminDifficultyOptions = $("adminDifficultyOptions");
+const adminStyleSelected = $("adminStyleSelected");
+const adminInstrumentSelected = $("adminInstrumentSelected");
+const adminDifficultySelected = $("adminDifficultySelected");
+const adminFileInput = $("adminFileInput");
+const adminPreviewWrap = $("adminPreviewWrap");
+const adminPreviewImage = $("adminPreviewImage");
+const adminSaveBtn = $("adminSaveBtn");
+const adminHelperText = $("adminHelperText");
+const adminSaveSuccess = $("adminSaveSuccess");
+
 const lightbox = $("lightbox");
 const lightboxImg = $("lightboxImg");
 const lightboxClose = $("lightboxClose");
-const topbar = document.querySelector(".topbar");
 
 const state = {
-  style: null,
-  instrument: null,
-  difficulty: null,
+  role: null,
+  student: { style: null, instrument: null, difficulty: null },
+  teacher: { style: null, instrument: null, difficulty: null },
+  teacherDraftImageData: null,
 };
 
 function setScreen(active) {
-  for (const el of [screenLanding, screenSelect, screenResult]) {
-    el.classList.toggle("is-active", el === active);
-    el.hidden = el !== active;
+  for (const el of ALL_SCREENS) {
+    const activeNow = el === active;
+    el.classList.toggle("is-active", activeNow);
+    el.hidden = !activeNow;
   }
-
   requestAnimationFrame(() => {
     const topbarOffset = topbar ? topbar.offsetHeight : 0;
     const targetTop = Math.max(active.offsetTop - topbarOffset - 12, 0);
@@ -122,70 +162,78 @@ function humanize(value) {
   return value ?? "Not selected";
 }
 
-function updateSelectedLabels() {
-  styleSelected.textContent = humanize(state.style);
-  instrumentSelected.textContent = humanize(state.instrument);
-  difficultySelected.textContent = humanize(state.difficulty);
+function createPill(label, onClick) {
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "pill";
+  btn.textContent = label;
+  btn.setAttribute("aria-pressed", "false");
+  btn.addEventListener("click", () => onClick(label));
+  return btn;
 }
 
-function updateShowButton() {
-  const ready = Boolean(state.style && state.instrument && state.difficulty);
+function renderGroupOptions(container, labels, onClick) {
+  container.innerHTML = "";
+  for (const label of labels) {
+    container.appendChild(createPill(label, onClick));
+  }
+}
+
+function syncPillGroup(container, selectedLabel) {
+  for (const pill of container.querySelectorAll(".pill")) {
+    pill.setAttribute("aria-pressed", pill.textContent === selectedLabel ? "true" : "false");
+  }
+}
+
+function updateStudentUI() {
+  styleSelected.textContent = humanize(state.student.style);
+  instrumentSelected.textContent = humanize(state.student.instrument);
+  difficultySelected.textContent = humanize(state.student.difficulty);
+  syncPillGroup(styleOptions, state.student.style);
+  syncPillGroup(instrumentOptions, state.student.instrument);
+  syncPillGroup(difficultyOptions, state.student.difficulty);
+
+  const ready = Boolean(state.student.style && state.student.instrument && state.student.difficulty);
   showBtn.disabled = !ready;
   helperText.textContent = ready
     ? "Ready. Press “Show Warm-Up”."
     : "Select style, instrument, and difficulty to continue.";
 }
 
-function createPill(label, groupKey) {
-  const btn = document.createElement("button");
-  btn.type = "button";
-  btn.className = "pill";
-  btn.textContent = label;
-  btn.setAttribute("aria-pressed", "false");
-  btn.addEventListener("click", () => {
-    state[groupKey] = label;
-    syncPills();
-    updateSelectedLabels();
-    updateShowButton();
-  });
-  return btn;
+function updateTeacherAdminUI() {
+  adminStyleSelected.textContent = humanize(state.teacher.style);
+  adminInstrumentSelected.textContent = humanize(state.teacher.instrument);
+  adminDifficultySelected.textContent = humanize(state.teacher.difficulty);
+  syncPillGroup(adminStyleOptions, state.teacher.style);
+  syncPillGroup(adminInstrumentOptions, state.teacher.instrument);
+  syncPillGroup(adminDifficultyOptions, state.teacher.difficulty);
+
+  const ready = Boolean(
+    state.teacher.style && state.teacher.instrument && state.teacher.difficulty && state.teacherDraftImageData
+  );
+  adminSaveBtn.disabled = !ready;
+  adminHelperText.textContent = ready
+    ? "Ready to save this warm-up image."
+    : "Select style, instrument, difficulty, and choose an image.";
 }
 
-function renderOptions(container, labels, groupKey) {
-  container.innerHTML = "";
-  for (const label of labels) {
-    container.appendChild(createPill(label, groupKey));
-  }
+function resetStudentSelections() {
+  state.student.style = null;
+  state.student.instrument = null;
+  state.student.difficulty = null;
+  updateStudentUI();
 }
 
-function syncPills() {
-  syncPillGroup(styleOptions, state.style);
-  syncPillGroup(instrumentOptions, state.instrument);
-  syncPillGroup(difficultyOptions, state.difficulty);
-}
-
-function syncPillGroup(container, selectedLabel) {
-  for (const el of container.querySelectorAll(".pill")) {
-    const isSelected = el.textContent === selectedLabel;
-    el.setAttribute("aria-pressed", isSelected ? "true" : "false");
-  }
-}
-
-function resetSelections({ keepScreen = true } = {}) {
-  state.style = null;
-  state.instrument = null;
-  state.difficulty = null;
-  syncPills();
-  updateSelectedLabels();
-  updateShowButton();
-  if (!keepScreen) setScreen(screenLanding);
-}
-
-function setResultChips() {
-  resultChips.innerHTML = "";
-  resultChips.appendChild(makeChip(state.style, "is-primary"));
-  resultChips.appendChild(makeChip(state.instrument, "is-accent"));
-  resultChips.appendChild(makeChip(state.difficulty, ""));
+function resetTeacherDraft() {
+  state.teacher.style = null;
+  state.teacher.instrument = null;
+  state.teacher.difficulty = null;
+  state.teacherDraftImageData = null;
+  adminFileInput.value = "";
+  adminPreviewWrap.hidden = true;
+  adminPreviewImage.removeAttribute("src");
+  adminSaveSuccess.hidden = true;
+  updateTeacherAdminUI();
 }
 
 function makeChip(text, extraClass) {
@@ -196,8 +244,13 @@ function makeChip(text, extraClass) {
 }
 
 function showResult() {
-  setResultChips();
-  const path = getWarmupPath(state.style, state.instrument, state.difficulty);
+  const { style, instrument, difficulty } = state.student;
+  const path = getWarmupPath(style, instrument, difficulty);
+
+  resultChips.innerHTML = "";
+  resultChips.appendChild(makeChip(style, "is-primary"));
+  resultChips.appendChild(makeChip(instrument, "is-accent"));
+  resultChips.appendChild(makeChip(difficulty, ""));
 
   if (!path) {
     missingMessage.hidden = false;
@@ -208,15 +261,12 @@ function showResult() {
     sheetFigure.hidden = false;
     sheetImage.src = path;
   }
-
   setScreen(screenResult);
 }
 
 function openLightbox() {
   if (!sheetImage.src) return;
   lightboxImg.src = sheetImage.src;
-
-  // Use <dialog> when supported; fallback is just opening the image in a new tab.
   if (typeof lightbox.showModal === "function") {
     lightbox.showModal();
   } else {
@@ -229,54 +279,150 @@ function closeLightbox() {
   lightboxImg.removeAttribute("src");
 }
 
+function navigateHome() {
+  state.role = null;
+  teacherLoginError.hidden = true;
+  teacherLoginForm.reset();
+  setScreen(screenRole);
+}
+
+function handleTeacherFilePick(file) {
+  adminSaveSuccess.hidden = true;
+  if (!file) {
+    state.teacherDraftImageData = null;
+    adminPreviewWrap.hidden = true;
+    adminPreviewImage.removeAttribute("src");
+    updateTeacherAdminUI();
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    state.teacherDraftImageData = String(reader.result);
+    adminPreviewImage.src = state.teacherDraftImageData;
+    adminPreviewWrap.hidden = false;
+    updateTeacherAdminUI();
+  };
+  reader.readAsDataURL(file);
+}
+
 // ----- Init -----
-renderOptions(styleOptions, STYLES, "style");
-renderOptions(instrumentOptions, INSTRUMENTS, "instrument");
-renderOptions(difficultyOptions, DIFFICULTIES, "difficulty");
-
-updateSelectedLabels();
-updateShowButton();
-setScreen(screenLanding);
-
-// ----- Events -----
-startBtn.addEventListener("click", () => {
-  setScreen(screenSelect);
+renderGroupOptions(styleOptions, STYLES, (label) => {
+  state.student.style = label;
+  updateStudentUI();
+});
+renderGroupOptions(instrumentOptions, INSTRUMENTS, (label) => {
+  state.student.instrument = label;
+  updateStudentUI();
+});
+renderGroupOptions(difficultyOptions, DIFFICULTIES, (label) => {
+  state.student.difficulty = label;
+  updateStudentUI();
 });
 
-howItWorksBtn.addEventListener("click", () => {
-  howItWorksPanel.hidden = !howItWorksPanel.hidden;
+renderGroupOptions(adminStyleOptions, STYLES, (label) => {
+  state.teacher.style = label;
+  adminSaveSuccess.hidden = true;
+  updateTeacherAdminUI();
+});
+renderGroupOptions(adminInstrumentOptions, INSTRUMENTS, (label) => {
+  state.teacher.instrument = label;
+  adminSaveSuccess.hidden = true;
+  updateTeacherAdminUI();
+});
+renderGroupOptions(adminDifficultyOptions, DIFFICULTIES, (label) => {
+  state.teacher.difficulty = label;
+  adminSaveSuccess.hidden = true;
+  updateTeacherAdminUI();
 });
 
-backToLandingBtn.addEventListener("click", () => {
+updateStudentUI();
+updateTeacherAdminUI();
+setScreen(screenRole);
+
+// ----- Global nav events -----
+homeBtn.addEventListener("click", navigateHome);
+resetBtnTop.addEventListener("click", () => {
+  resetStudentSelections();
+  adminSaveSuccess.hidden = true;
+});
+
+// ----- Role flow -----
+studentRoleBtn.addEventListener("click", () => {
+  state.role = "student";
   setScreen(screenLanding);
 });
 
-resetBtn.addEventListener("click", () => resetSelections());
-resetBtnTop.addEventListener("click", () => resetSelections());
+teacherRoleBtn.addEventListener("click", () => {
+  state.role = "teacher";
+  teacherLoginError.hidden = true;
+  teacherLoginForm.reset();
+  setScreen(screenTeacherLogin);
+});
+
+// ----- Student flow -----
+startBtn.addEventListener("click", () => setScreen(screenSelect));
+howItWorksBtn.addEventListener("click", () => {
+  howItWorksPanel.hidden = !howItWorksPanel.hidden;
+});
+backToLandingBtn.addEventListener("click", () => setScreen(screenLanding));
+resetBtn.addEventListener("click", resetStudentSelections);
 
 showBtn.addEventListener("click", () => {
-  if (showBtn.disabled) return;
-  showResult();
+  if (!showBtn.disabled) showResult();
+});
+backToSelectBtn.addEventListener("click", () => setScreen(screenSelect));
+chooseAnotherBtn.addEventListener("click", () => setScreen(screenSelect));
+
+// ----- Teacher login -----
+teacherLoginBackBtn.addEventListener("click", navigateHome);
+teacherLoginForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+
+  // Credential check happens here (simple front-end gate, not secure auth).
+  if (teacherUsername.value === TEACHER_USERNAME && teacherPassword.value === TEACHER_PASSWORD) {
+    teacherLoginError.hidden = true;
+    resetTeacherDraft();
+    setScreen(screenTeacherAdmin);
+  } else {
+    teacherLoginError.hidden = false;
+    teacherLoginError.textContent = "incorrect password";
+  }
 });
 
-backToSelectBtn.addEventListener("click", () => {
-  setScreen(screenSelect);
+// ----- Teacher admin -----
+adminFileInput.addEventListener("change", () => {
+  const file = adminFileInput.files && adminFileInput.files[0];
+  handleTeacherFilePick(file || null);
 });
 
-chooseAnotherBtn.addEventListener("click", () => {
-  setScreen(screenSelect);
+adminSaveBtn.addEventListener("click", () => {
+  const { style, instrument, difficulty } = state.teacher;
+  if (!(style && instrument && difficulty && state.teacherDraftImageData)) return;
+
+  // This writes uploaded image data to a style+instrument+difficulty key mapping.
+  ensureNestedKey(teacherWarmups, style, instrument);
+  teacherWarmups[style][instrument][difficulty] = state.teacherDraftImageData;
+  persistTeacherWarmups();
+
+  adminSaveSuccess.hidden = false;
+  adminSaveSuccess.textContent = "Warm-up saved successfully.";
 });
 
+teacherLogoutBtn.addEventListener("click", () => {
+  resetTeacherDraft();
+  navigateHome();
+});
+
+// ----- Lightbox -----
 sheetImage.addEventListener("click", openLightbox);
 lightboxClose.addEventListener("click", closeLightbox);
 lightbox.addEventListener("click", (e) => {
-  // Clicking the backdrop closes the dialog.
   const rect = lightbox.getBoundingClientRect();
   const clickedOutside =
     e.clientX < rect.left || e.clientX > rect.right || e.clientY < rect.top || e.clientY > rect.bottom;
   if (clickedOutside) closeLightbox();
 });
-
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") closeLightbox();
 });

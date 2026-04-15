@@ -20,6 +20,9 @@
           </div>
         </div>
         <div class="topbar-actions">
+          <button class="btn btn-ghost" id="homeBtn" type="button" title="Go to role selection">
+            Home
+          </button>
           <button class="btn btn-ghost" id="resetBtnTop" type="button" title="Reset selections">
             Reset
           </button>
@@ -27,8 +30,21 @@
       </header>
 
       <main class="main" role="main">
-        <!-- LANDING -->
-        <section class="screen is-active" id="screenLanding" aria-labelledby="landingTitle">
+        <!-- ROLE SELECTION -->
+        <section class="screen is-active" id="screenRole" aria-labelledby="roleTitle">
+          <div class="card hero">
+            <div class="hero-badge">Choose your access</div>
+            <h1 class="hero-title" id="roleTitle">Sight Reading Warm-Ups</h1>
+            <p class="hero-subtitle">Select your role to continue.</p>
+            <div class="hero-actions">
+              <button class="btn btn-primary" id="studentRoleBtn" type="button">Student</button>
+              <button class="btn btn-ghost" id="teacherRoleBtn" type="button">Teacher</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- STUDENT LANDING -->
+        <section class="screen" id="screenLanding" aria-labelledby="landingTitle">
           <div class="card hero">
             <div class="hero-badge">In-class warm-ups</div>
             <h1 class="hero-title" id="landingTitle">Sight Reading Warm-Ups</h1>
@@ -142,6 +158,107 @@
                   Choose Another
                 </button>
               </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- TEACHER LOGIN -->
+        <section class="screen" id="screenTeacherLogin" aria-labelledby="teacherLoginTitle">
+          <div class="card">
+            <div class="card-header">
+              <h2 class="card-title" id="teacherLoginTitle">Teacher Login</h2>
+              <p class="card-subtitle">Enter teacher credentials to manage warm-up uploads.</p>
+            </div>
+
+            <form id="teacherLoginForm" class="form-stack" novalidate>
+              <label class="field">
+                <span class="field-label">Username</span>
+                <input class="field-input" type="text" id="teacherUsername" autocomplete="username" required />
+              </label>
+
+              <label class="field">
+                <span class="field-label">Password</span>
+                <input
+                  class="field-input"
+                  type="password"
+                  id="teacherPassword"
+                  autocomplete="current-password"
+                  required
+                />
+              </label>
+
+              <p class="helper error-text" id="teacherLoginError" role="alert" hidden>incorrect password</p>
+
+              <div class="actions">
+                <button class="btn btn-ghost" id="teacherLoginBackBtn" type="button">Back</button>
+                <button class="btn btn-primary" type="submit">Log In</button>
+              </div>
+            </form>
+          </div>
+        </section>
+
+        <!-- TEACHER ADMIN -->
+        <section class="screen" id="screenTeacherAdmin" aria-labelledby="teacherAdminTitle">
+          <div class="card">
+            <div class="card-header">
+              <h2 class="card-title" id="teacherAdminTitle">Teacher Upload Panel</h2>
+              <p class="card-subtitle">
+                Assign a warm-up image to a style + instrument + difficulty combination.
+              </p>
+            </div>
+
+            <div class="grid">
+              <section class="picker" aria-labelledby="adminStyleTitle">
+                <div class="picker-head">
+                  <h3 class="picker-title" id="adminStyleTitle">Musical style</h3>
+                  <div class="picker-selected" id="adminStyleSelected">Not selected</div>
+                </div>
+                <div class="pill-row" id="adminStyleOptions" role="list"></div>
+              </section>
+
+              <section class="picker" aria-labelledby="adminInstrumentTitle">
+                <div class="picker-head">
+                  <h3 class="picker-title" id="adminInstrumentTitle">Instrument</h3>
+                  <div class="picker-selected" id="adminInstrumentSelected">Not selected</div>
+                </div>
+                <div class="pill-row" id="adminInstrumentOptions" role="list"></div>
+              </section>
+
+              <section class="picker" aria-labelledby="adminDifficultyTitle">
+                <div class="picker-head">
+                  <h3 class="picker-title" id="adminDifficultyTitle">Difficulty</h3>
+                  <div class="picker-selected" id="adminDifficultySelected">Not selected</div>
+                </div>
+                <div class="pill-row" id="adminDifficultyOptions" role="list"></div>
+              </section>
+            </div>
+
+            <div class="uploader">
+              <label class="field">
+                <span class="field-label">Warm-up image file</span>
+                <input
+                  class="field-input"
+                  type="file"
+                  id="adminFileInput"
+                  accept="image/*"
+                />
+              </label>
+
+              <div class="upload-preview" id="adminPreviewWrap" hidden>
+                <img id="adminPreviewImage" alt="Preview before saving" />
+              </div>
+            </div>
+
+            <p class="helper" id="adminHelperText" role="status" aria-live="polite">
+              Select style, instrument, difficulty, and choose an image.
+            </p>
+            <p class="helper success-text" id="adminSaveSuccess" role="status" aria-live="polite" hidden>
+              Warm-up saved successfully.
+            </p>
+
+            <div class="actions">
+              <button class="btn btn-ghost" id="teacherLogoutBtn" type="button">Logout</button>
+              <button class="btn btn-primary" id="adminSaveBtn" type="button" disabled>Save Warm-Up</button>
             </div>
           </div>
         </section>
