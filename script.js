@@ -72,9 +72,33 @@ function persistTeacherWarmups() {
   localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(teacherWarmups));
 }
 
-function getWarmupPath(style, instrument, difficulty) {
+// File-type detection and normalization:
+// - old entries may be plain strings (image src/data URL)
+// - new entries are objects with { name, type, data }
+function normalizeWarmupEntry(entry) {
+  if (!entry) return null;
+  if (typeof entry === "string") {
+    return {
+      name: "warmup-image",
+      type: entry.startsWith("data:application/pdf") ? "application/pdf" : "image/*",
+      data: entry,
+    };
+  }
+  if (typeof entry === "object" && typeof entry.data === "string") {
+    return {
+      name: entry.name || "warmup-file",
+      type: entry.type || (entry.data.startsWith("data:application/pdf") ? "application/pdf" : "image/*"),
+      data: entry.data,
+    };
+  }
+  return null;
+}
+
+function getWarmupEntry(style, instrument, difficulty) {
   // Student reads teacher-uploaded warm-up first, then static fallback map.
-  return teacherWarmups?.[style]?.[instrument]?.[difficulty] ?? WARMUPS?.[style]?.[instrument]?.[difficulty] ?? null;
+  const teacherEntry = normalizeWarmupEntry(teacherWarmups?.[style]?.[instrument]?.[difficulty]);
+  if (teacherEntry) return teacherEntry;
+  return normalizeWarmupEntry(WARMUPS?.[style]?.[instrument]?.[difficulty]);
 }
 
 const $ = (id) => document.getElementById(id);
@@ -114,6 +138,8 @@ const resultChips = $("resultChips");
 const missingMessage = $("missingMessage");
 const sheetFigure = $("sheetFigure");
 const sheetImage = $("sheetImage");
+const pdfViewerWrap = $("pdfViewerWrap");
+const pdfViewer = $("pdfViewer");
 
 const teacherLoginForm = $("teacherLoginForm");
 const teacherUsername = $("teacherUsername");
@@ -131,6 +157,8 @@ const adminDifficultySelected = $("adminDifficultySelected");
 const adminFileInput = $("adminFileInput");
 const adminPreviewWrap = $("adminPreviewWrap");
 const adminPreviewImage = $("adminPreviewImage");
+const adminFileNameText = $("adminFileNameText");
+const adminPdfNote = $("adminPdfNote");
 const adminSaveBtn = $("adminSaveBtn");
 const adminHelperText = $("adminHelperText");
 const adminSaveSuccess = $("adminSaveSuccess");
@@ -143,7 +171,7 @@ const state = {
   role: null,
   student: { style: null, instrument: null, difficulty: null },
   teacher: { style: null, instrument: null, difficulty: null },
-  teacherDraftImageData: null,
+  teacherDraftFile: null,
 };
 
 function setScreen(active) {
@@ -210,12 +238,12 @@ function updateTeacherAdminUI() {
   syncPillGroup(adminDifficultyOptions, state.teacher.difficulty);
 
   const ready = Boolean(
-    state.teacher.style && state.teacher.instrument && state.teacher.difficulty && state.teacherDraftImageData
+    state.teacher.style && state.teacher.instrument && state.teacher.difficulty && state.teacherDraftFile
   );
   adminSaveBtn.disabled = !ready;
   adminHelperText.textContent = ready
-    ? "Ready to save this warm-up image."
-    : "Select style, instrument, difficulty, and choose an image.";
+    ? "Ready to save this warm-up file."
+    : "Select style, instrument, difficulty, and choose an image or PDF.";
 }
 
 function resetStudentSelections() {
@@ -229,8 +257,10 @@ function resetTeacherDraft() {
   state.teacher.style = null;
   state.teacher.instrument = null;
   state.teacher.difficulty = null;
-  state.teacherDraftImageData = null;
+  state.teacherDraftFile = null;
   adminFileInput.value = "";
+  adminFileNameText.textContent = "No file selected.";
+  adminPdfNote.hidden = true;
   adminPreviewWrap.hidden = true;
   adminPreviewImage.removeAttribute("src");
   adminSaveSuccess.hidden = true;
@@ -246,21 +276,34 @@ function makeChip(text, extraClass) {
 
 function showResult() {
   const { style, instrument, difficulty } = state.student;
-  const path = getWarmupPath(style, instrument, difficulty);
+  const entry = getWarmupEntry(style, instrument, difficulty);
 
   resultChips.innerHTML = "";
   resultChips.appendChild(makeChip(style, "is-primary"));
   resultChips.appendChild(makeChip(instrument, "is-accent"));
   resultChips.appendChild(makeChip(difficulty, ""));
 
-  if (!path) {
+  if (!entry) {
     missingMessage.hidden = false;
     sheetFigure.hidden = true;
     sheetImage.removeAttribute("src");
+    pdfViewerWrap.hidden = true;
+    pdfViewer.removeAttribute("src");
   } else {
     missingMessage.hidden = true;
-    sheetFigure.hidden = false;
-    sheetImage.src = path;
+    const isPdf = entry.type === "application/pdf" || entry.data.startsWith("data:application/pdf");
+    if (isPdf) {
+      sheetFigure.hidden = true;
+      sheetImage.removeAttribute("src");
+      pdfViewerWrap.hidden = false;
+      // PDF rendering is browser-native via <embed>.
+      pdfViewer.src = entry.data;
+    } else {
+      pdfViewerWrap.hidden = true;
+      pdfViewer.removeAttribute("src");
+      sheetFigure.hidden = false;
+      sheetImage.src = entry.data;
+    }
   }
   setScreen(screenResult);
 }
@@ -290,18 +333,34 @@ function navigateHome() {
 function handleTeacherFilePick(file) {
   adminSaveSuccess.hidden = true;
   if (!file) {
-    state.teacherDraftImageData = null;
+    state.teacherDraftFile = null;
+    adminFileNameText.textContent = "No file selected.";
+    adminPdfNote.hidden = true;
     adminPreviewWrap.hidden = true;
     adminPreviewImage.removeAttribute("src");
     updateTeacherAdminUI();
     return;
   }
 
+  // File type detection: keep images previewable, PDFs saved with metadata and note.
+  adminFileNameText.textContent = `Selected: ${file.name}`;
+  const isPdf = file.type === "application/pdf" || /\.pdf$/i.test(file.name);
+  adminPdfNote.hidden = !isPdf;
+
   const reader = new FileReader();
   reader.onload = () => {
-    state.teacherDraftImageData = String(reader.result);
-    adminPreviewImage.src = state.teacherDraftImageData;
-    adminPreviewWrap.hidden = false;
+    state.teacherDraftFile = {
+      name: file.name,
+      type: isPdf ? "application/pdf" : file.type || "image/*",
+      data: String(reader.result),
+    };
+    if (isPdf) {
+      adminPreviewWrap.hidden = true;
+      adminPreviewImage.removeAttribute("src");
+    } else {
+      adminPreviewImage.src = state.teacherDraftFile.data;
+      adminPreviewWrap.hidden = false;
+    }
     updateTeacherAdminUI();
   };
   reader.readAsDataURL(file);
@@ -399,11 +458,11 @@ adminFileInput.addEventListener("change", () => {
 
 adminSaveBtn.addEventListener("click", () => {
   const { style, instrument, difficulty } = state.teacher;
-  if (!(style && instrument && difficulty && state.teacherDraftImageData)) return;
+  if (!(style && instrument && difficulty && state.teacherDraftFile)) return;
 
-  // This writes uploaded image data to a style+instrument+difficulty key mapping.
+  // localStorage save payload includes file data + MIME type + file name.
   ensureNestedKey(teacherWarmups, style, instrument);
-  teacherWarmups[style][instrument][difficulty] = state.teacherDraftImageData;
+  teacherWarmups[style][instrument][difficulty] = state.teacherDraftFile;
   persistTeacherWarmups();
 
   adminSaveSuccess.hidden = false;

@@ -412,6 +412,22 @@ body {
   background: #fff;
 }
 
+.pdf-viewer-wrap {
+  width: min(980px, 100%);
+  margin: 0 auto;
+  border-radius: 14px;
+  border: 1px solid rgba(17, 24, 39, 0.1);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  background: #fff;
+}
+
+.pdf-viewer-wrap embed {
+  width: 100%;
+  height: min(72vh, 900px);
+  display: block;
+}
+
 /* Result */
 .chips {
   display: flex;

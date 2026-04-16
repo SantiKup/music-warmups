@@ -149,6 +149,10 @@
                   Tip: click the image to zoom.
                 </figcaption>
               </figure>
+
+              <div class="pdf-viewer-wrap" id="pdfViewerWrap" hidden>
+                <embed id="pdfViewer" type="application/pdf" />
+              </div>
             </div>
 
             <div class="actions">
@@ -203,7 +207,7 @@
             <div class="card-header">
               <h2 class="card-title" id="teacherAdminTitle">Teacher Upload Panel</h2>
               <p class="card-subtitle">
-                Assign a warm-up image to a style + instrument + difficulty combination.
+                Assign a warm-up file to a style + instrument + difficulty combination.
               </p>
             </div>
 
@@ -235,14 +239,17 @@
 
             <div class="uploader">
               <label class="field">
-                <span class="field-label">Warm-up image file</span>
+                <span class="field-label">Warm-up file (image or PDF)</span>
                 <input
                   class="field-input"
                   type="file"
                   id="adminFileInput"
-                  accept="image/*"
+                  accept="image/png,image/jpeg,image/jpg,image/svg+xml,image/webp,application/pdf"
                 />
               </label>
+
+              <p class="helper" id="adminFileNameText">No file selected.</p>
+              <p class="helper" id="adminPdfNote" hidden>PDF selected</p>
 
               <div class="upload-preview" id="adminPreviewWrap" hidden>
                 <img id="adminPreviewImage" alt="Preview before saving" />
@@ -250,7 +257,7 @@
             </div>
 
             <p class="helper" id="adminHelperText" role="status" aria-live="polite">
-              Select style, instrument, difficulty, and choose an image.
+              Select style, instrument, difficulty, and choose an image or PDF.
             </p>
             <p class="helper success-text" id="adminSaveSuccess" role="status" aria-live="polite" hidden>
               Warm-up saved successfully.
