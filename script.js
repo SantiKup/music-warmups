@@ -1,22 +1,21 @@
 /* ==========================================================================
-   Class Grooves (static)
+   BandJam (static)
    - Role-based flow: Student or Teacher
    - Teacher uploads use localStorage (front-end only persistence)
    ========================================================================== */
 
-const STYLES = ["Groovy", "Swing", "Ballad", "Rock"];
+// Core option labels used across student and teacher selectors.
+const STYLES = ["Blues", "Swing", "Pop Rock", "Disco", "Reggae", "6/8", "Funk", "Latin", "Country", "Waltz"];
 const INSTRUMENTS = [
-  "Tuba",
-  "Trombone",
-  "Bari Sax",
-  "Tenor Sax",
-  "Alto Sax",
-  "Clarinet",
-  "Bassoon",
-  "Oboe",
-  "Trumpet",
-  "Flute",
-  "Drums",
+  "C",
+  "Bb",
+  "Eb",
+  "F",
+  "Bass clef (upper)",
+  "Bass line (Bass guitar)",
+  "Bass line (Tuba), Harmony",
+  "Drumkit",
+  "Mallets",
 ];
 // Difficulty scale labels: 1 (easiest) -> 3 (hardest)
 const DIFFICULTIES = ["1", "2", "3"];
@@ -26,10 +25,16 @@ const TEACHER_USERNAME = "JGibbs";
 const TEACHER_PASSWORD = "Music.site2026JG";
 
 const STYLE_PLACEHOLDER = {
-  Groovy: "assets/groovy_placeholder.svg",
+  Blues: "assets/groovy_placeholder.svg",
   Swing: "assets/swing_placeholder.svg",
-  Ballad: "assets/ballad_placeholder.svg",
-  Rock: "assets/rock_placeholder.svg",
+  "Pop Rock": "assets/rock_placeholder.svg",
+  Disco: "assets/ballad_placeholder.svg",
+  Reggae: "assets/groovy_placeholder.svg",
+  "6/8": "assets/ballad_placeholder.svg",
+  Funk: "assets/groovy_placeholder.svg",
+  Latin: "assets/swing_placeholder.svg",
+  Country: "assets/ballad_placeholder.svg",
+  Waltz: "assets/rock_placeholder.svg",
 };
 
 const WARMUPS = buildDefaultWarmups();
@@ -46,7 +51,7 @@ function buildDefaultWarmups() {
       }
     }
   }
-  delete map.Rock.Oboe["3"];
+  delete map.Waltz.Mallets["3"];
   return map;
 }
 

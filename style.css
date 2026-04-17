@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Class Grooves (static)
+   BandJam (static)
    - Keep this file beginner-friendly and easy to edit later.
    - Colors: 2–3 tones + neutrals for a calm academic look.
    ========================================================================== */
@@ -313,6 +313,9 @@ body {
   border: 1px solid rgba(17, 24, 39, 0.12);
   background: #fff;
   color: rgba(17, 24, 39, 0.88);
+  white-space: normal;
+  line-height: 1.25;
+  text-align: center;
   cursor: pointer;
   transition: transform 140ms var(--ease), box-shadow 140ms var(--ease), border-color 160ms var(--ease),
     background 160ms var(--ease);
