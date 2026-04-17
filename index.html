@@ -120,9 +120,26 @@
         <!-- RESULT -->
         <section class="screen" id="screenResult" aria-labelledby="resultTitle">
           <div class="card">
-            <div class="card-header">
-              <h2 class="card-title" id="resultTitle">Warm-up</h2>
-              <div class="chips" id="resultChips" aria-label="Selected options"></div>
+            <div class="card-header result-header">
+              <div>
+                <h2 class="card-title" id="resultTitle">Warm-up</h2>
+                <div class="chips" id="resultChips" aria-label="Selected options"></div>
+              </div>
+
+              <div class="audio-panel" aria-label="Audio playback">
+                <div class="audio-row">
+                  <span class="audio-label">Full Jam</span>
+                  <div class="audio-slot" id="fullJamAudioSlot">Not added</div>
+                </div>
+                <div class="audio-row">
+                  <span class="audio-label">Level Jam</span>
+                  <div class="audio-slot" id="levelJamAudioSlot">Not added</div>
+                </div>
+                <div class="audio-row">
+                  <span class="audio-label">Backing Track</span>
+                  <div class="audio-slot" id="backingTrackAudioSlot">Not added</div>
+                </div>
+              </div>
             </div>
 
             <div class="result">
@@ -207,9 +224,105 @@
             <div class="card-header">
               <h2 class="card-title" id="teacherAdminTitle">Teacher Upload Panel</h2>
               <p class="card-subtitle">
-                Assign a warm-up file to a style + instrument + difficulty combination.
+                Upload style audio, level audio, and sheet music.
               </p>
             </div>
+
+            <h3 class="section-title">Style Audio</h3>
+            <p class="muted section-note">
+              Shared across all instruments and difficulty levels for the selected style.
+            </p>
+
+            <div class="grid">
+              <section class="picker" aria-labelledby="styleAudioStyleTitle">
+                <div class="picker-head">
+                  <h3 class="picker-title" id="styleAudioStyleTitle">Musical style</h3>
+                  <div class="picker-selected" id="styleAudioSelected">Not selected</div>
+                </div>
+                <div class="pill-row" id="styleAudioOptions" role="list"></div>
+              </section>
+            </div>
+
+            <div class="uploader upload-group">
+              <label class="field">
+                <span class="field-label">Full Jam Master</span>
+                <input
+                  class="field-input"
+                  type="file"
+                  id="fullJamInput"
+                  accept=".mp3,.wav,.ogg,.m4a,.aac,.webm,audio/mpeg,audio/wav,audio/ogg,audio/mp4,audio/aac,audio/webm"
+                />
+              </label>
+              <p class="helper" id="fullJamFileNameText">No file selected.</p>
+              <button class="btn btn-primary upload-save-btn" id="fullJamSaveBtn" type="button" disabled>
+                Save Full Jam Master
+              </button>
+
+              <label class="field">
+                <span class="field-label">Backing Track</span>
+                <input
+                  class="field-input"
+                  type="file"
+                  id="backingTrackInput"
+                  accept=".mp3,.wav,.ogg,.m4a,.aac,.webm,audio/mpeg,audio/wav,audio/ogg,audio/mp4,audio/aac,audio/webm"
+                />
+              </label>
+              <p class="helper" id="backingTrackFileNameText">No file selected.</p>
+              <button class="btn btn-primary upload-save-btn" id="backingTrackSaveBtn" type="button" disabled>
+                Save Backing Track
+              </button>
+
+              <p class="helper success-text" id="styleAudioSaveSuccess" role="status" aria-live="polite" hidden>
+                Style audio saved successfully.
+              </p>
+            </div>
+
+            <h3 class="section-title">Level Audio</h3>
+            <p class="muted section-note">
+              Shared across all instruments for the selected style and difficulty.
+            </p>
+
+            <div class="grid">
+              <section class="picker" aria-labelledby="levelAudioStyleTitle">
+                <div class="picker-head">
+                  <h3 class="picker-title" id="levelAudioStyleTitle">Musical style</h3>
+                  <div class="picker-selected" id="levelAudioStyleSelected">Not selected</div>
+                </div>
+                <div class="pill-row" id="levelAudioStyleOptions" role="list"></div>
+              </section>
+
+              <section class="picker" aria-labelledby="levelAudioDifficultyTitle">
+                <div class="picker-head">
+                  <h3 class="picker-title" id="levelAudioDifficultyTitle">Difficulty</h3>
+                  <div class="picker-selected" id="levelAudioDifficultySelected">Not selected</div>
+                </div>
+                <div class="pill-row" id="levelAudioDifficultyOptions" role="list"></div>
+              </section>
+            </div>
+
+            <div class="uploader upload-group">
+              <label class="field">
+                <span class="field-label">Level Full Jam</span>
+                <input
+                  class="field-input"
+                  type="file"
+                  id="levelFullJamInput"
+                  accept=".mp3,.wav,.ogg,.m4a,.aac,.webm,audio/mpeg,audio/wav,audio/ogg,audio/mp4,audio/aac,audio/webm"
+                />
+              </label>
+              <p class="helper" id="levelFullJamFileNameText">No file selected.</p>
+              <button class="btn btn-primary upload-save-btn" id="levelFullJamSaveBtn" type="button" disabled>
+                Save Level Full Jam
+              </button>
+              <p class="helper success-text" id="levelAudioSaveSuccess" role="status" aria-live="polite" hidden>
+                Level audio saved successfully.
+              </p>
+            </div>
+
+            <h3 class="section-title">Sheet Music</h3>
+            <p class="muted section-note">
+              Saved to one style + instrument + difficulty combination.
+            </p>
 
             <div class="grid">
               <section class="picker" aria-labelledby="adminStyleTitle">
@@ -285,4 +398,3 @@
     <script src="script.js"></script>
   </body>
 </html>
-

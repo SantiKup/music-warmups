@@ -43,21 +43,92 @@ let teacherWarmups = loadTeacherWarmups();
 function buildDefaultWarmups() {
   const map = {};
   for (const style of STYLES) {
-    map[style] = {};
-    for (const instrument of INSTRUMENTS) {
-      map[style][instrument] = {};
-      for (const difficulty of DIFFICULTIES) {
-        map[style][instrument][difficulty] = STYLE_PLACEHOLDER[style];
+    map[style] = {
+      fullJamMaster: null,
+      backingTrack: null,
+      levels: {},
+    };
+    for (const difficulty of DIFFICULTIES) {
+      map[style].levels[difficulty] = {
+        levelFullJam: null,
+        instruments: {},
+      };
+      for (const instrument of INSTRUMENTS) {
+        map[style].levels[difficulty].instruments[instrument] = {
+          sheetFile: STYLE_PLACEHOLDER[style],
+        };
       }
     }
   }
-  delete map.Waltz.Mallets["3"];
+  delete map.Waltz.levels["3"].instruments.Mallets;
   return map;
 }
 
-function ensureNestedKey(obj, style, instrument) {
-  if (!obj[style]) obj[style] = {};
-  if (!obj[style][instrument]) obj[style][instrument] = {};
+function ensureStyleKey(obj, style) {
+  if (!obj[style]) {
+    obj[style] = { fullJamMaster: null, backingTrack: null, levels: {} };
+  }
+  if (!obj[style].levels) obj[style].levels = {};
+  return obj[style];
+}
+
+function ensureLevelKey(obj, style, difficulty) {
+  const styleEntry = ensureStyleKey(obj, style);
+  if (!styleEntry.levels[difficulty]) {
+    styleEntry.levels[difficulty] = { levelFullJam: null, instruments: {} };
+  }
+  if (!styleEntry.levels[difficulty].instruments) {
+    styleEntry.levels[difficulty].instruments = {};
+  }
+  return styleEntry.levels[difficulty];
+}
+
+function ensureSheetKey(obj, style, difficulty, instrument) {
+  const levelEntry = ensureLevelKey(obj, style, difficulty);
+  if (!levelEntry.instruments[instrument]) {
+    levelEntry.instruments[instrument] = {};
+  }
+  return levelEntry.instruments[instrument];
+}
+
+function migrateWarmupData(data) {
+  if (!data || typeof data !== "object") return {};
+  const migrated = {};
+
+  for (const style of Object.keys(data)) {
+    const styleEntry = data[style];
+    if (!styleEntry || typeof styleEntry !== "object") continue;
+
+    const targetStyle = ensureStyleKey(migrated, style);
+    targetStyle.fullJamMaster = normalizeAudioEntry(styleEntry.fullJamMaster);
+    targetStyle.backingTrack = normalizeAudioEntry(styleEntry.backingTrack);
+
+    if (styleEntry.levels && typeof styleEntry.levels === "object") {
+      for (const difficulty of Object.keys(styleEntry.levels)) {
+        const levelEntry = styleEntry.levels[difficulty];
+        if (!levelEntry || typeof levelEntry !== "object") continue;
+        const targetLevel = ensureLevelKey(migrated, style, difficulty);
+        targetLevel.levelFullJam = normalizeAudioEntry(levelEntry.levelFullJam);
+
+        const instruments = levelEntry.instruments || {};
+        for (const instrument of Object.keys(instruments)) {
+          ensureSheetKey(migrated, style, difficulty, instrument).sheetFile =
+            normalizeWarmupEntry(instruments[instrument]?.sheetFile);
+        }
+      }
+    } else {
+      // Backward compatibility for old localStorage shape: style -> instrument -> difficulty.
+      for (const instrument of Object.keys(styleEntry)) {
+        if (!INSTRUMENTS.includes(instrument)) continue;
+        for (const difficulty of Object.keys(styleEntry[instrument] || {})) {
+          ensureSheetKey(migrated, style, difficulty, instrument).sheetFile =
+            normalizeWarmupEntry(styleEntry[instrument][difficulty]);
+        }
+      }
+    }
+  }
+
+  return migrated;
 }
 
 // localStorage load: this is where teacher-saved warm-ups are restored on page load.
@@ -66,7 +137,7 @@ function loadTeacherWarmups() {
     const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
     if (!raw) return {};
     const parsed = JSON.parse(raw);
-    return parsed && typeof parsed === "object" ? parsed : {};
+    return migrateWarmupData(parsed);
   } catch {
     return {};
   }
@@ -99,11 +170,42 @@ function normalizeWarmupEntry(entry) {
   return null;
 }
 
+function normalizeAudioEntry(entry) {
+  if (!entry) return null;
+  if (typeof entry === "object" && typeof entry.data === "string") {
+    return {
+      name: entry.name || "audio-file",
+      type: entry.type || "audio/*",
+      data: entry.data,
+    };
+  }
+  return null;
+}
+
+function getSheetEntryFromWarmups(map, style, instrument, difficulty) {
+  const structuredEntry = map?.[style]?.levels?.[difficulty]?.instruments?.[instrument]?.sheetFile;
+  if (structuredEntry) return normalizeWarmupEntry(structuredEntry);
+
+  // Legacy read path for any old unsaved structure still in memory.
+  return normalizeWarmupEntry(map?.[style]?.[instrument]?.[difficulty]);
+}
+
 function getWarmupEntry(style, instrument, difficulty) {
   // Student reads teacher-uploaded warm-up first, then static fallback map.
-  const teacherEntry = normalizeWarmupEntry(teacherWarmups?.[style]?.[instrument]?.[difficulty]);
+  const teacherEntry = getSheetEntryFromWarmups(teacherWarmups, style, instrument, difficulty);
   if (teacherEntry) return teacherEntry;
-  return normalizeWarmupEntry(WARMUPS?.[style]?.[instrument]?.[difficulty]);
+  return getSheetEntryFromWarmups(WARMUPS, style, instrument, difficulty);
+}
+
+function getStyleAudioEntry(style, audioKey) {
+  return normalizeAudioEntry(teacherWarmups?.[style]?.[audioKey] || WARMUPS?.[style]?.[audioKey]);
+}
+
+function getLevelAudioEntry(style, difficulty) {
+  return normalizeAudioEntry(
+    teacherWarmups?.[style]?.levels?.[difficulty]?.levelFullJam ||
+      WARMUPS?.[style]?.levels?.[difficulty]?.levelFullJam
+  );
 }
 
 const $ = (id) => document.getElementById(id);
@@ -140,6 +242,9 @@ const difficultySelected = $("difficultySelected");
 const backToSelectBtn = $("backToSelectBtn");
 const chooseAnotherBtn = $("chooseAnotherBtn");
 const resultChips = $("resultChips");
+const fullJamAudioSlot = $("fullJamAudioSlot");
+const levelJamAudioSlot = $("levelJamAudioSlot");
+const backingTrackAudioSlot = $("backingTrackAudioSlot");
 const missingMessage = $("missingMessage");
 const sheetFigure = $("sheetFigure");
 const sheetImage = $("sheetImage");
@@ -152,6 +257,25 @@ const teacherPassword = $("teacherPassword");
 const teacherLoginError = $("teacherLoginError");
 const teacherLoginBackBtn = $("teacherLoginBackBtn");
 const teacherLogoutBtn = $("teacherLogoutBtn");
+
+const styleAudioOptions = $("styleAudioOptions");
+const styleAudioSelected = $("styleAudioSelected");
+const fullJamInput = $("fullJamInput");
+const fullJamFileNameText = $("fullJamFileNameText");
+const fullJamSaveBtn = $("fullJamSaveBtn");
+const backingTrackInput = $("backingTrackInput");
+const backingTrackFileNameText = $("backingTrackFileNameText");
+const backingTrackSaveBtn = $("backingTrackSaveBtn");
+const styleAudioSaveSuccess = $("styleAudioSaveSuccess");
+
+const levelAudioStyleOptions = $("levelAudioStyleOptions");
+const levelAudioDifficultyOptions = $("levelAudioDifficultyOptions");
+const levelAudioStyleSelected = $("levelAudioStyleSelected");
+const levelAudioDifficultySelected = $("levelAudioDifficultySelected");
+const levelFullJamInput = $("levelFullJamInput");
+const levelFullJamFileNameText = $("levelFullJamFileNameText");
+const levelFullJamSaveBtn = $("levelFullJamSaveBtn");
+const levelAudioSaveSuccess = $("levelAudioSaveSuccess");
 
 const adminStyleOptions = $("adminStyleOptions");
 const adminInstrumentOptions = $("adminInstrumentOptions");
@@ -176,7 +300,12 @@ const state = {
   role: null,
   student: { style: null, instrument: null, difficulty: null },
   teacher: { style: null, instrument: null, difficulty: null },
+  styleAudio: { style: null },
+  levelAudio: { style: null, difficulty: null },
   teacherDraftFile: null,
+  fullJamDraftFile: null,
+  backingTrackDraftFile: null,
+  levelFullJamDraftFile: null,
 };
 
 function setScreen(active) {
@@ -251,6 +380,27 @@ function updateTeacherAdminUI() {
     : "Select style, instrument, difficulty, and choose an image or PDF.";
 }
 
+function updateStyleAudioUI() {
+  styleAudioSelected.textContent = humanize(state.styleAudio.style);
+  syncPillGroup(styleAudioOptions, state.styleAudio.style);
+
+  fullJamSaveBtn.disabled = !(state.styleAudio.style && state.fullJamDraftFile);
+  backingTrackSaveBtn.disabled = !(state.styleAudio.style && state.backingTrackDraftFile);
+}
+
+function updateLevelAudioUI() {
+  levelAudioStyleSelected.textContent = humanize(state.levelAudio.style);
+  levelAudioDifficultySelected.textContent = humanize(state.levelAudio.difficulty);
+  syncPillGroup(levelAudioStyleOptions, state.levelAudio.style);
+  syncPillGroup(levelAudioDifficultyOptions, state.levelAudio.difficulty);
+
+  levelFullJamSaveBtn.disabled = !(
+    state.levelAudio.style &&
+    state.levelAudio.difficulty &&
+    state.levelFullJamDraftFile
+  );
+}
+
 function resetStudentSelections() {
   state.student.style = null;
   state.student.instrument = null;
@@ -262,13 +412,29 @@ function resetTeacherDraft() {
   state.teacher.style = null;
   state.teacher.instrument = null;
   state.teacher.difficulty = null;
+  state.styleAudio.style = null;
+  state.levelAudio.style = null;
+  state.levelAudio.difficulty = null;
   state.teacherDraftFile = null;
+  state.fullJamDraftFile = null;
+  state.backingTrackDraftFile = null;
+  state.levelFullJamDraftFile = null;
   adminFileInput.value = "";
+  fullJamInput.value = "";
+  backingTrackInput.value = "";
+  levelFullJamInput.value = "";
   adminFileNameText.textContent = "No file selected.";
+  fullJamFileNameText.textContent = "No file selected.";
+  backingTrackFileNameText.textContent = "No file selected.";
+  levelFullJamFileNameText.textContent = "No file selected.";
   adminPdfNote.hidden = true;
   adminPreviewWrap.hidden = true;
   adminPreviewImage.removeAttribute("src");
   adminSaveSuccess.hidden = true;
+  styleAudioSaveSuccess.hidden = true;
+  levelAudioSaveSuccess.hidden = true;
+  updateStyleAudioUI();
+  updateLevelAudioUI();
   updateTeacherAdminUI();
 }
 
@@ -279,6 +445,35 @@ function makeChip(text, extraClass) {
   return span;
 }
 
+function renderAudioSlot(slot, entry) {
+  slot.innerHTML = "";
+  if (!entry) {
+    slot.textContent = "Not added";
+    return;
+  }
+
+  const audio = document.createElement("audio");
+  audio.controls = true;
+  audio.preload = "none";
+
+  const source = document.createElement("source");
+  source.src = entry.data;
+  source.type = entry.type;
+  audio.appendChild(source);
+
+  // If the browser cannot play the file, the audio control remains visible and this text is available.
+  audio.append("Audio format not supported by this browser.");
+  slot.appendChild(audio);
+}
+
+function renderResultAudio(style, difficulty) {
+  // Result audio follows the hierarchy:
+  // Full Jam and Backing Track are style-wide, while Level Jam belongs to style + difficulty.
+  renderAudioSlot(fullJamAudioSlot, getStyleAudioEntry(style, "fullJamMaster"));
+  renderAudioSlot(levelJamAudioSlot, getLevelAudioEntry(style, difficulty));
+  renderAudioSlot(backingTrackAudioSlot, getStyleAudioEntry(style, "backingTrack"));
+}
+
 function showResult() {
   const { style, instrument, difficulty } = state.student;
   const entry = getWarmupEntry(style, instrument, difficulty);
@@ -287,6 +482,7 @@ function showResult() {
   resultChips.appendChild(makeChip(style, "is-primary"));
   resultChips.appendChild(makeChip(instrument, "is-accent"));
   resultChips.appendChild(makeChip(difficulty, ""));
+  renderResultAudio(style, difficulty);
 
   if (!entry) {
     missingMessage.hidden = false;
@@ -371,6 +567,73 @@ function handleTeacherFilePick(file) {
   reader.readAsDataURL(file);
 }
 
+function isSupportedAudioFile(file) {
+  return (
+    file.type.startsWith("audio/") ||
+    /\.(mp3|wav|ogg|m4a|aac|webm)$/i.test(file.name)
+  );
+}
+
+function handleAudioFilePick(file, draftKey, fileNameText, updateUI) {
+  styleAudioSaveSuccess.hidden = true;
+  levelAudioSaveSuccess.hidden = true;
+
+  if (!file) {
+    state[draftKey] = null;
+    fileNameText.textContent = "No file selected.";
+    updateUI();
+    return;
+  }
+
+  if (!isSupportedAudioFile(file)) {
+    state[draftKey] = null;
+    fileNameText.textContent = "Choose an MP3, WAV, OGG, M4A, AAC, or WEBM file.";
+    updateUI();
+    return;
+  }
+
+  fileNameText.textContent = `Selected: ${file.name}`;
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    state[draftKey] = {
+      name: file.name,
+      type: file.type || "audio/*",
+      data: String(reader.result),
+    };
+    updateUI();
+  };
+  reader.readAsDataURL(file);
+}
+
+function saveStyleAudio(audioKey, draftKey, successMessage) {
+  const { style } = state.styleAudio;
+  if (!(style && state[draftKey])) return;
+
+  // Style audio is stored on the style itself so every instrument and level can share it.
+  const styleEntry = ensureStyleKey(teacherWarmups, style);
+  styleEntry[audioKey] = state[draftKey];
+  persistTeacherWarmups();
+
+  styleAudioSaveSuccess.hidden = false;
+  styleAudioSaveSuccess.textContent = successMessage;
+  updateStyleAudioUI();
+}
+
+function saveLevelAudio() {
+  const { style, difficulty } = state.levelAudio;
+  if (!(style && difficulty && state.levelFullJamDraftFile)) return;
+
+  // Level audio is stored under style + difficulty, never under an instrument.
+  const levelEntry = ensureLevelKey(teacherWarmups, style, difficulty);
+  levelEntry.levelFullJam = state.levelFullJamDraftFile;
+  persistTeacherWarmups();
+
+  levelAudioSaveSuccess.hidden = false;
+  levelAudioSaveSuccess.textContent = "Level full jam saved successfully.";
+  updateLevelAudioUI();
+}
+
 // ----- Init -----
 renderGroupOptions(styleOptions, STYLES, (label) => {
   state.student.style = label;
@@ -383,6 +646,23 @@ renderGroupOptions(instrumentOptions, INSTRUMENTS, (label) => {
 renderGroupOptions(difficultyOptions, DIFFICULTIES, (label) => {
   state.student.difficulty = label;
   updateStudentUI();
+});
+
+renderGroupOptions(styleAudioOptions, STYLES, (label) => {
+  state.styleAudio.style = label;
+  styleAudioSaveSuccess.hidden = true;
+  updateStyleAudioUI();
+});
+
+renderGroupOptions(levelAudioStyleOptions, STYLES, (label) => {
+  state.levelAudio.style = label;
+  levelAudioSaveSuccess.hidden = true;
+  updateLevelAudioUI();
+});
+renderGroupOptions(levelAudioDifficultyOptions, DIFFICULTIES, (label) => {
+  state.levelAudio.difficulty = label;
+  levelAudioSaveSuccess.hidden = true;
+  updateLevelAudioUI();
 });
 
 renderGroupOptions(adminStyleOptions, STYLES, (label) => {
@@ -402,6 +682,8 @@ renderGroupOptions(adminDifficultyOptions, DIFFICULTIES, (label) => {
 });
 
 updateStudentUI();
+updateStyleAudioUI();
+updateLevelAudioUI();
 updateTeacherAdminUI();
 setScreen(screenRole);
 
@@ -456,6 +738,31 @@ teacherLoginForm.addEventListener("submit", (event) => {
 });
 
 // ----- Teacher admin -----
+fullJamInput.addEventListener("change", () => {
+  const file = fullJamInput.files && fullJamInput.files[0];
+  handleAudioFilePick(file || null, "fullJamDraftFile", fullJamFileNameText, updateStyleAudioUI);
+});
+
+backingTrackInput.addEventListener("change", () => {
+  const file = backingTrackInput.files && backingTrackInput.files[0];
+  handleAudioFilePick(file || null, "backingTrackDraftFile", backingTrackFileNameText, updateStyleAudioUI);
+});
+
+levelFullJamInput.addEventListener("change", () => {
+  const file = levelFullJamInput.files && levelFullJamInput.files[0];
+  handleAudioFilePick(file || null, "levelFullJamDraftFile", levelFullJamFileNameText, updateLevelAudioUI);
+});
+
+fullJamSaveBtn.addEventListener("click", () => {
+  saveStyleAudio("fullJamMaster", "fullJamDraftFile", "Full jam master saved successfully.");
+});
+
+backingTrackSaveBtn.addEventListener("click", () => {
+  saveStyleAudio("backingTrack", "backingTrackDraftFile", "Backing track saved successfully.");
+});
+
+levelFullJamSaveBtn.addEventListener("click", saveLevelAudio);
+
 adminFileInput.addEventListener("change", () => {
   const file = adminFileInput.files && adminFileInput.files[0];
   handleTeacherFilePick(file || null);
@@ -466,8 +773,7 @@ adminSaveBtn.addEventListener("click", () => {
   if (!(style && instrument && difficulty && state.teacherDraftFile)) return;
 
   // localStorage save payload includes file data + MIME type + file name.
-  ensureNestedKey(teacherWarmups, style, instrument);
-  teacherWarmups[style][instrument][difficulty] = state.teacherDraftFile;
+  ensureSheetKey(teacherWarmups, style, difficulty, instrument).sheetFile = state.teacherDraftFile;
   persistTeacherWarmups();
 
   adminSaveSuccess.hidden = false;
@@ -491,4 +797,3 @@ lightbox.addEventListener("click", (e) => {
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") closeLightbox();
 });
-

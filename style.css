@@ -399,6 +399,24 @@ body {
   gap: 10px;
 }
 
+.section-title {
+  margin: 20px 0 4px;
+  font-size: 1.05rem;
+}
+
+.section-note {
+  margin: 0 0 10px;
+}
+
+.upload-group {
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(17, 24, 39, 0.08);
+}
+
+.upload-save-btn {
+  justify-self: start;
+}
+
 .upload-preview {
   border: 1px dashed rgba(17, 24, 39, 0.2);
   border-radius: 14px;
@@ -432,6 +450,13 @@ body {
 }
 
 /* Result */
+.result-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
 .chips {
   display: flex;
   flex-wrap: wrap;
@@ -456,6 +481,39 @@ body {
 .chip.is-primary {
   border-color: rgba(31, 111, 235, 0.32);
   background: rgba(31, 111, 235, 0.10);
+}
+
+.audio-panel {
+  width: min(420px, 100%);
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid rgba(17, 24, 39, 0.10);
+  border-radius: 12px;
+  background: rgba(17, 24, 39, 0.02);
+}
+
+.audio-row {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+}
+
+.audio-label {
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.audio-slot {
+  min-width: 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.audio-slot audio {
+  width: 100%;
+  display: block;
 }
 
 .result {
@@ -548,3 +606,13 @@ body {
   }
 }
 
+@media (max-width: 720px) {
+  .result-header {
+    display: grid;
+  }
+
+  .audio-row {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+}
