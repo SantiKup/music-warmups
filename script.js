@@ -1,10 +1,28 @@
 /* ==========================================================================
    BandJam (static)
    - Role-based flow: Student or Teacher
-   - Teacher uploads use localStorage (front-end only persistence)
+   - Teacher uploads use Supabase Storage + Database metadata
    ========================================================================== */
 
 // Core option labels used across student and teacher selectors.
+async function testUpload() {
+  const fileInput = document.createElement("input");
+  fileInput.type = "file";
+
+  fileInput.onchange = async () => {
+    const file = fileInput.files[0];
+
+    const result = await uploadFileToSupabase(
+      file,
+      `test/${Date.now()}_${safeFileName(file.name)}`
+    );
+
+    console.log("Uploaded:", result);
+  };
+
+  fileInput.click();
+}
+
 const STYLES = ["Blues", "Swing", "Pop Rock", "Disco", "Reggae", "6/8", "Funk", "Latin", "Country", "Waltz"];
 const INSTRUMENTS = [
   "C",
@@ -20,9 +38,24 @@ const INSTRUMENTS = [
 // Difficulty scale labels: 1 (easiest) -> 3 (hardest)
 const DIFFICULTIES = ["1", "2", "3"];
 
-const LOCAL_STORAGE_KEY = "musicWarmupsByCombo";
 const TEACHER_USERNAME = "JGibbs";
 const TEACHER_PASSWORD = "Music.site2026JG";
+
+// ----- Supabase config -----
+// Paste your project URL and anon key here. The browser client is loaded in index.html.
+const SUPABASE_URL = "https://inqqzjhorxddsdbsbmya.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_UenSczlYdz4mGb7z2cTUmA_iXjZG4fs";
+const SUPABASE_BUCKET = "bandjam-files";
+const ASSETS_TABLE = "assets";
+
+const supabaseClient =
+  window.supabase && SUPABASE_URL && SUPABASE_ANON_KEY
+    ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+    : null;
+
+function isSupabaseReady() {
+  return !!supabaseClient;
+}
 
 const STYLE_PLACEHOLDER = {
   Blues: "assets/groovy_placeholder.svg",
@@ -38,7 +71,6 @@ const STYLE_PLACEHOLDER = {
 };
 
 const WARMUPS = buildDefaultWarmups();
-let teacherWarmups = loadTeacherWarmups();
 
 function buildDefaultWarmups() {
   const map = {};
@@ -64,148 +96,166 @@ function buildDefaultWarmups() {
   return map;
 }
 
-function ensureStyleKey(obj, style) {
-  if (!obj[style]) {
-    obj[style] = { fullJamMaster: null, backingTrack: null, levels: {} };
+function isSupabaseReady() {
+  return Boolean(supabaseClient);
+}
+
+function slugify(value) {
+  return String(value)
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "") || "item";
+}
+
+function safeFileName(name) {
+  const parts = String(name || "file").split(".");
+  const extension = parts.length > 1 ? parts.pop().toLowerCase().replace(/[^a-z0-9]/g, "") : "";
+  const baseName = slugify(parts.join(".") || "file");
+  return extension ? `${baseName}.${extension}` : baseName;
+}
+
+function buildStoragePath(assetType, style, difficulty, instrument, fileName) {
+  const cleanStyle = slugify(style);
+  const cleanDifficulty = difficulty ? slugify(difficulty) : null;
+  const cleanInstrument = instrument ? slugify(instrument) : null;
+  const cleanFileName = safeFileName(fileName);
+
+  if (assetType === "sheet") {
+    return `sheets/${cleanStyle}/${cleanDifficulty}/${cleanInstrument}/${cleanFileName}`;
   }
-  if (!obj[style].levels) obj[style].levels = {};
-  return obj[style];
-}
-
-function ensureLevelKey(obj, style, difficulty) {
-  const styleEntry = ensureStyleKey(obj, style);
-  if (!styleEntry.levels[difficulty]) {
-    styleEntry.levels[difficulty] = { levelFullJam: null, instruments: {} };
+  if (assetType === "full_jam") {
+    return `audio/full-jam/${cleanStyle}/${cleanFileName}`;
   }
-  if (!styleEntry.levels[difficulty].instruments) {
-    styleEntry.levels[difficulty].instruments = {};
+  if (assetType === "level_jam") {
+    return `audio/level-jam/${cleanStyle}/${cleanDifficulty}/${cleanFileName}`;
   }
-  return styleEntry.levels[difficulty];
-}
-
-function ensureSheetKey(obj, style, difficulty, instrument) {
-  const levelEntry = ensureLevelKey(obj, style, difficulty);
-  if (!levelEntry.instruments[instrument]) {
-    levelEntry.instruments[instrument] = {};
+  if (assetType === "backing_track") {
+    return `audio/backing-track/${cleanStyle}/${cleanFileName}`;
   }
-  return levelEntry.instruments[instrument];
+  return `uploads/${cleanStyle}/${cleanFileName}`;
 }
 
-function migrateWarmupData(data) {
-  if (!data || typeof data !== "object") return {};
-  const migrated = {};
+// Uploads the raw browser File to Supabase Storage, then reads its public URL.
+async function uploadFileToSupabase(file, filePath) {
+  if (!isSupabaseReady()) throw new Error("Supabase is not configured yet.");
 
-  for (const style of Object.keys(data)) {
-    const styleEntry = data[style];
-    if (!styleEntry || typeof styleEntry !== "object") continue;
+  const { error: uploadError } = await supabaseClient.storage.from(SUPABASE_BUCKET).upload(filePath, file, {
+    cacheControl: "3600",
+    contentType: file.type || "application/octet-stream",
+    upsert: true,
+  });
+  if (uploadError) throw uploadError;
 
-    const targetStyle = ensureStyleKey(migrated, style);
-    targetStyle.fullJamMaster = normalizeAudioEntry(styleEntry.fullJamMaster);
-    targetStyle.backingTrack = normalizeAudioEntry(styleEntry.backingTrack);
-
-    if (styleEntry.levels && typeof styleEntry.levels === "object") {
-      for (const difficulty of Object.keys(styleEntry.levels)) {
-        const levelEntry = styleEntry.levels[difficulty];
-        if (!levelEntry || typeof levelEntry !== "object") continue;
-        const targetLevel = ensureLevelKey(migrated, style, difficulty);
-        targetLevel.levelFullJam = normalizeAudioEntry(levelEntry.levelFullJam);
-
-        const instruments = levelEntry.instruments || {};
-        for (const instrument of Object.keys(instruments)) {
-          ensureSheetKey(migrated, style, difficulty, instrument).sheetFile =
-            normalizeWarmupEntry(instruments[instrument]?.sheetFile);
-        }
-      }
-    } else {
-      // Backward compatibility for old localStorage shape: style -> instrument -> difficulty.
-      for (const instrument of Object.keys(styleEntry)) {
-        if (!INSTRUMENTS.includes(instrument)) continue;
-        for (const difficulty of Object.keys(styleEntry[instrument] || {})) {
-          ensureSheetKey(migrated, style, difficulty, instrument).sheetFile =
-            normalizeWarmupEntry(styleEntry[instrument][difficulty]);
-        }
-      }
-    }
-  }
-
-  return migrated;
+  const { data } = supabaseClient.storage.from(SUPABASE_BUCKET).getPublicUrl(filePath);
+  return {
+    file_path: filePath,
+    file_url: data.publicUrl,
+    mime_type: file.type || "application/octet-stream",
+    label: file.name,
+  };
 }
 
-// localStorage load: this is where teacher-saved warm-ups are restored on page load.
-function loadTeacherWarmups() {
-  try {
-    const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (!raw) return {};
-    const parsed = JSON.parse(raw);
-    return migrateWarmupData(parsed);
-  } catch {
-    return {};
-  }
+function applyAssetFilters(query, { asset_type, style, difficulty = null, instrument = null }) {
+  query = query.eq("asset_type", asset_type).eq("style", style);
+  query = difficulty === null ? query.is("difficulty", null) : query.eq("difficulty", difficulty);
+  query = instrument === null ? query.is("instrument", null) : query.eq("instrument", instrument);
+  return query;
 }
 
-// localStorage save: this persists teacher uploads for this browser.
-function persistTeacherWarmups() {
-  localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(teacherWarmups));
+async function saveAssetMetadata(asset) {
+  if (!isSupabaseReady()) throw new Error("Supabase is not configured yet.");
+  const { data, error } = await supabaseClient.from(ASSETS_TABLE).insert(asset).select().single();
+  if (error) throw error;
+  return data;
 }
 
-// File-type detection and normalization:
-// - old entries may be plain strings (image src/data URL)
-// - new entries are objects with { name, type, data }
-function normalizeWarmupEntry(entry) {
-  if (!entry) return null;
-  if (typeof entry === "string") {
-    return {
-      name: "warmup-image",
-      type: entry.startsWith("data:application/pdf") ? "application/pdf" : "image/*",
-      data: entry,
-    };
-  }
-  if (typeof entry === "object" && typeof entry.data === "string") {
-    return {
-      name: entry.name || "warmup-file",
-      type: entry.type || (entry.data.startsWith("data:application/pdf") ? "application/pdf" : "image/*"),
-      data: entry.data,
-    };
-  }
-  return null;
-}
+// Metadata upsert is handled in app code so the table does not need a SQL unique constraint.
+async function upsertAssetMetadata(asset) {
+  if (!isSupabaseReady()) throw new Error("Supabase is not configured yet.");
 
-function normalizeAudioEntry(entry) {
-  if (!entry) return null;
-  if (typeof entry === "object" && typeof entry.data === "string") {
-    return {
-      name: entry.name || "audio-file",
-      type: entry.type || "audio/*",
-      data: entry.data,
-    };
-  }
-  return null;
-}
-
-function getSheetEntryFromWarmups(map, style, instrument, difficulty) {
-  const structuredEntry = map?.[style]?.levels?.[difficulty]?.instruments?.[instrument]?.sheetFile;
-  if (structuredEntry) return normalizeWarmupEntry(structuredEntry);
-
-  // Legacy read path for any old unsaved structure still in memory.
-  return normalizeWarmupEntry(map?.[style]?.[instrument]?.[difficulty]);
-}
-
-function getWarmupEntry(style, instrument, difficulty) {
-  // Student reads teacher-uploaded warm-up first, then static fallback map.
-  const teacherEntry = getSheetEntryFromWarmups(teacherWarmups, style, instrument, difficulty);
-  if (teacherEntry) return teacherEntry;
-  return getSheetEntryFromWarmups(WARMUPS, style, instrument, difficulty);
-}
-
-function getStyleAudioEntry(style, audioKey) {
-  return normalizeAudioEntry(teacherWarmups?.[style]?.[audioKey] || WARMUPS?.[style]?.[audioKey]);
-}
-
-function getLevelAudioEntry(style, difficulty) {
-  return normalizeAudioEntry(
-    teacherWarmups?.[style]?.levels?.[difficulty]?.levelFullJam ||
-      WARMUPS?.[style]?.levels?.[difficulty]?.levelFullJam
+  const { data: existingRows, error: selectError } = await applyAssetFilters(
+    supabaseClient.from(ASSETS_TABLE).select("id").limit(1),
+    asset
   );
+  if (selectError) throw selectError;
+
+  if (existingRows && existingRows.length > 0) {
+    const { data, error } = await supabaseClient
+      .from(ASSETS_TABLE)
+      .update(asset)
+      .eq("id", existingRows[0].id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  }
+
+  return saveAssetMetadata(asset);
+}
+
+function assetRowToEntry(row) {
+  if (!row) return null;
+  return {
+    name: row.label || "uploaded-file",
+    type: row.mime_type || "application/octet-stream",
+    data: row.file_url,
+    filePath: row.file_path,
+  };
+}
+
+async function getAssetByHierarchy(filters) {
+  if (!isSupabaseReady()) return null;
+
+  // Student mode asks for each asset type at its correct hierarchy level.
+  const { data, error } = await applyAssetFilters(
+    supabaseClient.from(ASSETS_TABLE).select("*").order("created_at", { ascending: false }).limit(1),
+    filters
+  );
+  if (error) throw error;
+  return assetRowToEntry(data && data[0]);
+}
+
+function getDefaultSheetEntry(style, instrument, difficulty) {
+  const filePath = WARMUPS?.[style]?.levels?.[difficulty]?.instruments?.[instrument]?.sheetFile;
+  if (!filePath) return null;
+  return {
+    name: "default-sheet",
+    type: filePath.endsWith(".pdf") ? "application/pdf" : "image/*",
+    data: filePath,
+  };
+}
+
+async function getSheetAsset(style, difficulty, instrument) {
+  const uploaded = await getAssetByHierarchy({ asset_type: "sheet", style, difficulty, instrument });
+  return uploaded || getDefaultSheetEntry(style, instrument, difficulty);
+}
+
+async function getFullJamAsset(style) {
+  return getAssetByHierarchy({ asset_type: "full_jam", style, difficulty: null, instrument: null });
+}
+
+async function getLevelJamAsset(style, difficulty) {
+  return getAssetByHierarchy({ asset_type: "level_jam", style, difficulty, instrument: null });
+}
+
+async function getBackingTrackAsset(style) {
+  return getAssetByHierarchy({ asset_type: "backing_track", style, difficulty: null, instrument: null });
+}
+
+async function uploadAssetFile({ file, assetType, style, difficulty = null, instrument = null }) {
+  const filePath = buildStoragePath(assetType, style, difficulty, instrument, file.name);
+  const uploadResult = await uploadFileToSupabase(file, filePath);
+  return upsertAssetMetadata({
+    asset_type: assetType,
+    style,
+    difficulty,
+    instrument,
+    file_path: uploadResult.file_path,
+    file_url: uploadResult.file_url,
+    mime_type: uploadResult.mime_type,
+    label: uploadResult.label,
+  });
 }
 
 const $ = (id) => document.getElementById(id);
@@ -466,45 +516,68 @@ function renderAudioSlot(slot, entry) {
   slot.appendChild(audio);
 }
 
-function renderResultAudio(style, difficulty) {
+async function renderResultAudio(style, difficulty) {
   // Result audio follows the hierarchy:
   // Full Jam and Backing Track are style-wide, while Level Jam belongs to style + difficulty.
-  renderAudioSlot(fullJamAudioSlot, getStyleAudioEntry(style, "fullJamMaster"));
-  renderAudioSlot(levelJamAudioSlot, getLevelAudioEntry(style, difficulty));
-  renderAudioSlot(backingTrackAudioSlot, getStyleAudioEntry(style, "backingTrack"));
+  fullJamAudioSlot.textContent = "Loading...";
+  levelJamAudioSlot.textContent = "Loading...";
+  backingTrackAudioSlot.textContent = "Loading...";
+
+  const [fullJam, levelJam, backingTrack] = await Promise.all([
+    getFullJamAsset(style),
+    getLevelJamAsset(style, difficulty),
+    getBackingTrackAsset(style),
+  ]);
+
+  renderAudioSlot(fullJamAudioSlot, fullJam);
+  renderAudioSlot(levelJamAudioSlot, levelJam);
+  renderAudioSlot(backingTrackAudioSlot, backingTrack);
 }
 
-function showResult() {
+async function showResult() {
   const { style, instrument, difficulty } = state.student;
-  const entry = getWarmupEntry(style, instrument, difficulty);
 
   resultChips.innerHTML = "";
   resultChips.appendChild(makeChip(style, "is-primary"));
   resultChips.appendChild(makeChip(instrument, "is-accent"));
   resultChips.appendChild(makeChip(difficulty, ""));
-  renderResultAudio(style, difficulty);
 
-  if (!entry) {
-    missingMessage.hidden = false;
-    sheetFigure.hidden = true;
-    sheetImage.removeAttribute("src");
-    pdfViewerWrap.hidden = true;
-    pdfViewer.removeAttribute("src");
-  } else {
-    missingMessage.hidden = true;
-    const isPdf = entry.type === "application/pdf" || entry.data.startsWith("data:application/pdf");
-    if (isPdf) {
-      sheetFigure.hidden = true;
-      sheetImage.removeAttribute("src");
-      pdfViewerWrap.hidden = false;
-      // PDF rendering is browser-native via <embed>.
-      pdfViewer.src = entry.data;
+  missingMessage.hidden = false;
+  sheetFigure.hidden = true;
+  sheetImage.removeAttribute("src");
+  pdfViewerWrap.hidden = true;
+  pdfViewer.removeAttribute("src");
+
+  try {
+    const [entry] = await Promise.all([
+      getSheetAsset(style, difficulty, instrument),
+      renderResultAudio(style, difficulty),
+    ]);
+
+    if (!entry) {
+      missingMessage.hidden = false;
     } else {
-      pdfViewerWrap.hidden = true;
-      pdfViewer.removeAttribute("src");
-      sheetFigure.hidden = false;
-      sheetImage.src = entry.data;
+      missingMessage.hidden = true;
+      const isPdf = entry.type === "application/pdf" || /\.pdf($|\?)/i.test(entry.data);
+      if (isPdf) {
+        sheetFigure.hidden = true;
+        sheetImage.removeAttribute("src");
+        pdfViewerWrap.hidden = false;
+        // PDF rendering is browser-native via <embed>.
+        pdfViewer.src = entry.data;
+      } else {
+        pdfViewerWrap.hidden = true;
+        pdfViewer.removeAttribute("src");
+        sheetFigure.hidden = false;
+        sheetImage.src = entry.data;
+      }
     }
+  } catch (error) {
+    console.error("Could not load assets from Supabase:", error);
+    fullJamAudioSlot.textContent = "Not added";
+    levelJamAudioSlot.textContent = "Not added";
+    backingTrackAudioSlot.textContent = "Not added";
+    missingMessage.hidden = false;
   }
   setScreen(screenResult);
 }
@@ -543,28 +616,25 @@ function handleTeacherFilePick(file) {
     return;
   }
 
-  // File type detection: keep images previewable, PDFs saved with metadata and note.
+  // Keep the File object for Supabase upload. Image preview is only a local convenience.
+  state.teacherDraftFile = file;
   adminFileNameText.textContent = `Selected: ${file.name}`;
   const isPdf = file.type === "application/pdf" || /\.pdf$/i.test(file.name);
   adminPdfNote.hidden = !isPdf;
 
-  const reader = new FileReader();
-  reader.onload = () => {
-    state.teacherDraftFile = {
-      name: file.name,
-      type: isPdf ? "application/pdf" : file.type || "image/*",
-      data: String(reader.result),
-    };
-    if (isPdf) {
-      adminPreviewWrap.hidden = true;
-      adminPreviewImage.removeAttribute("src");
-    } else {
-      adminPreviewImage.src = state.teacherDraftFile.data;
-      adminPreviewWrap.hidden = false;
-    }
+  if (isPdf) {
+    adminPreviewWrap.hidden = true;
+    adminPreviewImage.removeAttribute("src");
     updateTeacherAdminUI();
-  };
-  reader.readAsDataURL(file);
+  } else {
+    const reader = new FileReader();
+    reader.onload = () => {
+      adminPreviewImage.src = String(reader.result);
+      adminPreviewWrap.hidden = false;
+      updateTeacherAdminUI();
+    };
+    reader.readAsDataURL(file);
+  }
 }
 
 function isSupportedAudioFile(file) {
@@ -592,46 +662,51 @@ function handleAudioFilePick(file, draftKey, fileNameText, updateUI) {
     return;
   }
 
+  // Audio is not previewed like an image; Supabase receives the original File object.
+  state[draftKey] = file;
   fileNameText.textContent = `Selected: ${file.name}`;
-
-  const reader = new FileReader();
-  reader.onload = () => {
-    state[draftKey] = {
-      name: file.name,
-      type: file.type || "audio/*",
-      data: String(reader.result),
-    };
-    updateUI();
-  };
-  reader.readAsDataURL(file);
+  updateUI();
 }
 
-function saveStyleAudio(audioKey, draftKey, successMessage) {
+async function saveStyleAudio(assetType, draftKey, successMessage) {
   const { style } = state.styleAudio;
   if (!(style && state[draftKey])) return;
 
-  // Style audio is stored on the style itself so every instrument and level can share it.
-  const styleEntry = ensureStyleKey(teacherWarmups, style);
-  styleEntry[audioKey] = state[draftKey];
-  persistTeacherWarmups();
-
-  styleAudioSaveSuccess.hidden = false;
-  styleAudioSaveSuccess.textContent = successMessage;
-  updateStyleAudioUI();
+  try {
+    styleAudioSaveSuccess.hidden = false;
+    styleAudioSaveSuccess.textContent = "Uploading...";
+    await uploadAssetFile({ file: state[draftKey], assetType, style });
+    styleAudioSaveSuccess.textContent = successMessage;
+  } catch (error) {
+    console.error("Style audio upload failed:", error);
+    styleAudioSaveSuccess.hidden = false;
+    styleAudioSaveSuccess.textContent = error.message || "Could not save style audio.";
+  } finally {
+    updateStyleAudioUI();
+  }
 }
 
-function saveLevelAudio() {
+async function saveLevelAudio() {
   const { style, difficulty } = state.levelAudio;
   if (!(style && difficulty && state.levelFullJamDraftFile)) return;
 
-  // Level audio is stored under style + difficulty, never under an instrument.
-  const levelEntry = ensureLevelKey(teacherWarmups, style, difficulty);
-  levelEntry.levelFullJam = state.levelFullJamDraftFile;
-  persistTeacherWarmups();
-
-  levelAudioSaveSuccess.hidden = false;
-  levelAudioSaveSuccess.textContent = "Level full jam saved successfully.";
-  updateLevelAudioUI();
+  try {
+    levelAudioSaveSuccess.hidden = false;
+    levelAudioSaveSuccess.textContent = "Uploading...";
+    await uploadAssetFile({
+      file: state.levelFullJamDraftFile,
+      assetType: "level_jam",
+      style,
+      difficulty,
+    });
+    levelAudioSaveSuccess.textContent = "Level full jam saved successfully.";
+  } catch (error) {
+    console.error("Level audio upload failed:", error);
+    levelAudioSaveSuccess.hidden = false;
+    levelAudioSaveSuccess.textContent = error.message || "Could not save level audio.";
+  } finally {
+    updateLevelAudioUI();
+  }
 }
 
 // ----- Init -----
@@ -754,11 +829,11 @@ levelFullJamInput.addEventListener("change", () => {
 });
 
 fullJamSaveBtn.addEventListener("click", () => {
-  saveStyleAudio("fullJamMaster", "fullJamDraftFile", "Full jam master saved successfully.");
+  saveStyleAudio("full_jam", "fullJamDraftFile", "Full jam master saved successfully.");
 });
 
 backingTrackSaveBtn.addEventListener("click", () => {
-  saveStyleAudio("backingTrack", "backingTrackDraftFile", "Backing track saved successfully.");
+  saveStyleAudio("backing_track", "backingTrackDraftFile", "Backing track saved successfully.");
 });
 
 levelFullJamSaveBtn.addEventListener("click", saveLevelAudio);
@@ -768,16 +843,28 @@ adminFileInput.addEventListener("change", () => {
   handleTeacherFilePick(file || null);
 });
 
-adminSaveBtn.addEventListener("click", () => {
+adminSaveBtn.addEventListener("click", async () => {
   const { style, instrument, difficulty } = state.teacher;
   if (!(style && instrument && difficulty && state.teacherDraftFile)) return;
 
-  // localStorage save payload includes file data + MIME type + file name.
-  ensureSheetKey(teacherWarmups, style, difficulty, instrument).sheetFile = state.teacherDraftFile;
-  persistTeacherWarmups();
-
-  adminSaveSuccess.hidden = false;
-  adminSaveSuccess.textContent = "Warm-up saved successfully.";
+  try {
+    adminSaveSuccess.hidden = false;
+    adminSaveSuccess.textContent = "Uploading...";
+    await uploadAssetFile({
+      file: state.teacherDraftFile,
+      assetType: "sheet",
+      style,
+      difficulty,
+      instrument,
+    });
+    adminSaveSuccess.textContent = "Warm-up saved successfully.";
+  } catch (error) {
+    console.error("Sheet upload failed:", error);
+    adminSaveSuccess.hidden = false;
+    adminSaveSuccess.textContent = error.message || "Could not save warm-up.";
+  } finally {
+    updateTeacherAdminUI();
+  }
 });
 
 teacherLogoutBtn.addEventListener("click", () => {
