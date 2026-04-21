@@ -163,35 +163,44 @@ function applyAssetFilters(query, { asset_type, style, difficulty = null, instru
   return query;
 }
 
-async function saveAssetMetadata(asset) {
+async function findExistingAsset(asset) {
+  if (!isSupabaseReady()) throw new Error("Supabase is not configured yet.");
+  const { data, error } = await applyAssetFilters(
+    supabaseClient.from(ASSETS_TABLE).select("id").limit(1),
+    asset
+  ).maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+async function insertAssetMetadata(asset) {
   if (!isSupabaseReady()) throw new Error("Supabase is not configured yet.");
   const { data, error } = await supabaseClient.from(ASSETS_TABLE).insert(asset).select().single();
   if (error) throw error;
   return data;
 }
 
-// Metadata upsert is handled in app code so the table does not need a SQL unique constraint.
-async function upsertAssetMetadata(asset) {
+async function updateAssetMetadata(id, asset) {
   if (!isSupabaseReady()) throw new Error("Supabase is not configured yet.");
+  const { data, error } = await supabaseClient
+    .from(ASSETS_TABLE)
+    .update(asset)
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
 
-  const { data: existingRows, error: selectError } = await applyAssetFilters(
-    supabaseClient.from(ASSETS_TABLE).select("id").limit(1),
-    asset
-  );
-  if (selectError) throw selectError;
-
-  if (existingRows && existingRows.length > 0) {
-    const { data, error } = await supabaseClient
-      .from(ASSETS_TABLE)
-      .update(asset)
-      .eq("id", existingRows[0].id)
-      .select()
-      .single();
-    if (error) throw error;
-    return data;
-  }
-
-  return saveAssetMetadata(asset);
+async function upsertAssetMetadata(asset) {
+  // Metadata upsert is handled in app code so the table does not need a SQL unique constraint.
+  // Matching follows the asset hierarchy:
+  // sheet = style + difficulty + instrument
+  // full_jam/backing_track = style only
+  // level_jam = style + difficulty
+  const existingAsset = await findExistingAsset(asset);
+  if (existingAsset) return updateAssetMetadata(existingAsset.id, asset);
+  return insertAssetMetadata(asset);
 }
 
 function assetRowToEntry(row) {
@@ -207,13 +216,14 @@ function assetRowToEntry(row) {
 async function getAssetByHierarchy(filters) {
   if (!isSupabaseReady()) return null;
 
-  // Student mode asks for each asset type at its correct hierarchy level.
-  const { data, error } = await applyAssetFilters(
-    supabaseClient.from(ASSETS_TABLE).select("*").order("created_at", { ascending: false }).limit(1),
-    filters
-  );
+  // Student mode asks Supabase for each asset type at its correct hierarchy level.
+  // Audio is never queried by instrument; only sheet music uses instrument.
+  const { data, error } = await applyAssetFilters(supabaseClient.from(ASSETS_TABLE).select("*"), filters)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
   if (error) throw error;
-  return assetRowToEntry(data && data[0]);
+  return assetRowToEntry(data);
 }
 
 function getDefaultSheetEntry(style, instrument, difficulty) {
@@ -227,19 +237,23 @@ function getDefaultSheetEntry(style, instrument, difficulty) {
 }
 
 async function getSheetAsset(style, difficulty, instrument) {
+  // Sheet music is the only classroom asset keyed by style + difficulty + instrument.
   const uploaded = await getAssetByHierarchy({ asset_type: "sheet", style, difficulty, instrument });
   return uploaded || getDefaultSheetEntry(style, instrument, difficulty);
 }
 
 async function getFullJamAsset(style) {
+  // Full Jam is style-wide and shared by every instrument and difficulty.
   return getAssetByHierarchy({ asset_type: "full_jam", style, difficulty: null, instrument: null });
 }
 
 async function getLevelJamAsset(style, difficulty) {
+  // Level Jam is shared by every instrument at the selected style + difficulty.
   return getAssetByHierarchy({ asset_type: "level_jam", style, difficulty, instrument: null });
 }
 
 async function getBackingTrackAsset(style) {
+  // Backing Track is style-wide and shared by every instrument and difficulty.
   return getAssetByHierarchy({ asset_type: "backing_track", style, difficulty: null, instrument: null });
 }
 
@@ -558,18 +572,25 @@ async function showResult() {
       missingMessage.hidden = false;
     } else {
       missingMessage.hidden = true;
-      const isPdf = entry.type === "application/pdf" || /\.pdf($|\?)/i.test(entry.data);
+      const isPdf = entry.type === "application/pdf";
+      const isImage = entry.type.startsWith("image/") || entry.type === "image/*";
       if (isPdf) {
         sheetFigure.hidden = true;
         sheetImage.removeAttribute("src");
         pdfViewerWrap.hidden = false;
         // PDF rendering is browser-native via <embed>.
         pdfViewer.src = entry.data;
-      } else {
+      } else if (isImage) {
         pdfViewerWrap.hidden = true;
         pdfViewer.removeAttribute("src");
         sheetFigure.hidden = false;
         sheetImage.src = entry.data;
+      } else {
+        pdfViewerWrap.hidden = true;
+        pdfViewer.removeAttribute("src");
+        sheetFigure.hidden = true;
+        sheetImage.removeAttribute("src");
+        missingMessage.hidden = false;
       }
     }
   } catch (error) {
