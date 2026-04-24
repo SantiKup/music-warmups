@@ -39,7 +39,7 @@ const INSTRUMENTS = [
 const DIFFICULTIES = ["1", "2", "3"];
 
 const TEACHER_USERNAME = "JGibbs";
-const TEACHER_PASSWORD = "Music.site2026JG";
+const TEACHER_PASSWORD = "BandJam";
 
 // ----- Supabase config -----
 // Paste your project URL and anon key here. The browser client is loaded in index.html.
@@ -423,7 +423,7 @@ function updateStudentUI() {
   const ready = Boolean(state.student.style && state.student.instrument && state.student.difficulty);
   showBtn.disabled = !ready;
   helperText.textContent = ready
-    ? "Ready. Press “Show Warm-Up”."
+    ? "Ready. Press “Show Band Jam”."
     : "Select style, instrument, and difficulty to continue.";
 }
 
@@ -440,7 +440,7 @@ function updateTeacherAdminUI() {
   );
   adminSaveBtn.disabled = !ready;
   adminHelperText.textContent = ready
-    ? "Ready to save this warm-up file."
+    ? "Ready to save this band jam file."
     : "Select style, instrument, difficulty, and choose an image or PDF.";
 }
 
@@ -878,11 +878,11 @@ adminSaveBtn.addEventListener("click", async () => {
       difficulty,
       instrument,
     });
-    adminSaveSuccess.textContent = "Warm-up saved successfully.";
+    adminSaveSuccess.textContent = "Band jam saved successfully.";
   } catch (error) {
     console.error("Sheet upload failed:", error);
     adminSaveSuccess.hidden = false;
-    adminSaveSuccess.textContent = error.message || "Could not save warm-up.";
+    adminSaveSuccess.textContent = error.message || "Could not save band jam.";
   } finally {
     updateTeacherAdminUI();
   }

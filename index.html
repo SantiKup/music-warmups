@@ -46,11 +46,11 @@
         <!-- STUDENT LANDING -->
         <section class="screen" id="screenLanding" aria-labelledby="landingTitle">
           <div class="card hero">
-            <div class="hero-badge">In-class warm-ups</div>
+            <div class="hero-badge">In-class Band Jams</div>
             <h1 class="hero-title" id="landingTitle">BandJam</h1>
             <p class="hero-subtitle">
-              Select a musical style, your instrument, and a difficulty level to instantly open the
-              correct warm-up sheet.
+              Select a musical style, your instrument, and a Part number to instantly open the
+              correct Band Jam sheet.
             </p>
             <div class="hero-actions">
               <button class="btn btn-primary" id="startBtn" type="button">Start</button>
@@ -62,7 +62,7 @@
             <h2 class="card-title">How it works</h2>
             <p class="muted">
               This site does <strong>not</strong> generate music. Your teacher uploads images for each
-              combination. If a warm-up hasn’t been added yet, you’ll see a friendly message instead.
+              combination. If a Band Jam hasn’t been added yet, you’ll see a friendly message instead.
             </p>
           </div>
         </section>
@@ -71,7 +71,7 @@
         <section class="screen" id="screenSelect" aria-labelledby="selectTitle">
           <div class="card">
             <div class="card-header">
-              <h2 class="card-title" id="selectTitle">Choose your warm-up</h2>
+              <h2 class="card-title" id="selectTitle">Choose your Band Jam</h2>
               <p class="card-subtitle">Pick one option in each section.</p>
             </div>
 
@@ -94,7 +94,7 @@
 
               <section class="picker" aria-labelledby="difficultyTitle">
                 <div class="picker-head">
-                  <h3 class="picker-title" id="difficultyTitle">Difficulty</h3>
+                  <h3 class="picker-title" id="difficultyTitle">Part number</h3>
                   <div class="picker-selected" id="difficultySelected">Not selected</div>
                 </div>
                 <div class="pill-row" id="difficultyOptions" role="list"></div>
@@ -106,13 +106,13 @@
               <div class="actions-right">
                 <button class="btn btn-ghost" id="resetBtn" type="button">Reset</button>
                 <button class="btn btn-primary" id="showBtn" type="button" disabled>
-                  Show Warm-Up
+                  Show Band Jam
                 </button>
               </div>
             </div>
 
             <p class="helper" id="helperText" role="status" aria-live="polite">
-              Select style, instrument, and difficulty to continue.
+              Select style, instrument, and Part number to continue.
             </p>
           </div>
         </section>
@@ -122,17 +122,17 @@
           <div class="card">
             <div class="card-header result-header">
               <div>
-                <h2 class="card-title" id="resultTitle">Warm-up</h2>
+                <h2 class="card-title" id="resultTitle">Band Jam</h2>
                 <div class="chips" id="resultChips" aria-label="Selected options"></div>
               </div>
 
               <div class="audio-panel" aria-label="Audio playback">
                 <div class="audio-row">
-                  <span class="audio-label">Full Jam</span>
+                  <span class="audio-label">Full demo</span>
                   <div class="audio-slot" id="fullJamAudioSlot">Not added</div>
                 </div>
                 <div class="audio-row">
-                  <span class="audio-label">Level Jam</span>
+                  <span class="audio-label">Level demo</span>
                   <div class="audio-slot" id="levelJamAudioSlot">Not added</div>
                 </div>
                 <div class="audio-row">
@@ -147,7 +147,7 @@
                 <div class="empty-state">
                   <div class="empty-icon" aria-hidden="true">𝄞</div>
                   <div>
-                    <div class="empty-title">This warm-up has not been added yet.</div>
+                    <div class="empty-title">This Band Jam has not been added yet.</div>
                     <div class="empty-subtitle">
                       Try another combination, or check back later.
                     </div>
@@ -188,7 +188,7 @@
           <div class="card">
             <div class="card-header">
               <h2 class="card-title" id="teacherLoginTitle">Teacher Login</h2>
-              <p class="card-subtitle">Enter teacher credentials to manage warm-up uploads.</p>
+              <p class="card-subtitle">Enter teacher credentials to manage Band Jam uploads.</p>
             </div>
 
             <form id="teacherLoginForm" class="form-stack" novalidate>
@@ -230,7 +230,7 @@
 
             <h3 class="section-title">Style Audio</h3>
             <p class="muted section-note">
-              Shared across all instruments and difficulty levels for the selected style.
+              Shared across all instruments and part numbers for the selected style.
             </p>
 
             <div class="grid">
@@ -245,7 +245,7 @@
 
             <div class="uploader upload-group">
               <label class="field">
-                <span class="field-label">Full Jam Master</span>
+                <span class="field-label">Full demo Master</span>
                 <input
                   class="field-input"
                   type="file"
@@ -255,7 +255,7 @@
               </label>
               <p class="helper" id="fullJamFileNameText">No file selected.</p>
               <button class="btn btn-primary upload-save-btn" id="fullJamSaveBtn" type="button" disabled>
-                Save Full Jam Master
+                Save Full demo Master
               </button>
 
               <label class="field">
@@ -279,7 +279,7 @@
 
             <h3 class="section-title">Level Audio</h3>
             <p class="muted section-note">
-              Shared across all instruments for the selected style and difficulty.
+              Shared across all instruments for the selected style and part number.
             </p>
 
             <div class="grid">
@@ -293,7 +293,7 @@
 
               <section class="picker" aria-labelledby="levelAudioDifficultyTitle">
                 <div class="picker-head">
-                  <h3 class="picker-title" id="levelAudioDifficultyTitle">Difficulty</h3>
+                  <h3 class="picker-title" id="levelAudioDifficultyTitle">Part number</h3>
                   <div class="picker-selected" id="levelAudioDifficultySelected">Not selected</div>
                 </div>
                 <div class="pill-row" id="levelAudioDifficultyOptions" role="list"></div>
@@ -302,7 +302,7 @@
 
             <div class="uploader upload-group">
               <label class="field">
-                <span class="field-label">Level Full Jam</span>
+                <span class="field-label">Level Full demo</span>
                 <input
                   class="field-input"
                   type="file"
@@ -312,7 +312,7 @@
               </label>
               <p class="helper" id="levelFullJamFileNameText">No file selected.</p>
               <button class="btn btn-primary upload-save-btn" id="levelFullJamSaveBtn" type="button" disabled>
-                Save Level Full Jam
+                Save Level Full demo
               </button>
               <p class="helper success-text" id="levelAudioSaveSuccess" role="status" aria-live="polite" hidden>
                 Level audio saved successfully.
@@ -321,7 +321,7 @@
 
             <h3 class="section-title">Sheet Music</h3>
             <p class="muted section-note">
-              Saved to one style + instrument + difficulty combination.
+              Saved to one style + instrument + part number combination.
             </p>
 
             <div class="grid">
@@ -343,7 +343,7 @@
 
               <section class="picker" aria-labelledby="adminDifficultyTitle">
                 <div class="picker-head">
-                  <h3 class="picker-title" id="adminDifficultyTitle">Difficulty</h3>
+                  <h3 class="picker-title" id="adminDifficultyTitle">Part number</h3>
                   <div class="picker-selected" id="adminDifficultySelected">Not selected</div>
                 </div>
                 <div class="pill-row" id="adminDifficultyOptions" role="list"></div>
@@ -352,7 +352,7 @@
 
             <div class="uploader">
               <label class="field">
-                <span class="field-label">Warm-up file (image or PDF)</span>
+                <span class="field-label">Band Jam file (image or PDF)</span>
                 <input
                   class="field-input"
                   type="file"
@@ -370,15 +370,15 @@
             </div>
 
             <p class="helper" id="adminHelperText" role="status" aria-live="polite">
-              Select style, instrument, difficulty, and choose an image or PDF.
+              Select style, instrument, Part number, and choose an image or PDF.
             </p>
             <p class="helper success-text" id="adminSaveSuccess" role="status" aria-live="polite" hidden>
-              Warm-up saved successfully.
+              Band Jam saved successfully.
             </p>
 
             <div class="actions">
               <button class="btn btn-ghost" id="teacherLogoutBtn" type="button">Logout</button>
-              <button class="btn btn-primary" id="adminSaveBtn" type="button" disabled>Save Warm-Up</button>
+              <button class="btn btn-primary" id="adminSaveBtn" type="button" disabled>Save Band Jam</button>
             </div>
           </div>
         </section>
