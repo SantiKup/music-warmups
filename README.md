@@ -45,16 +45,9 @@ npm install
 
 ## Environment Variables
 
-Create a `.env` file (or export env vars) for Supabase and teacher login.
+Create a `.env` file (or export env vars) for Supabase, Better-Auth, and Google Credentials.
 
-```bash
-NUXT_PUBLIC_SUPABASE_URL=
-NUXT_PUBLIC_SUPABASE_ANON_KEY=
-NUXT_PUBLIC_SUPABASE_BUCKET=bandjam-files
-NUXT_PUBLIC_SUPABASE_ASSETS_TABLE=assets
-NUXT_PUBLIC_TEACHER_USERNAME=JGibbs
-NUXT_PUBLIC_TEACHER_PASSWORD=BandJam
-```
+See `.env.local`.
 
 If Supabase values are omitted, the app still runs, but upload/retrieval from Supabase is disabled.
 
