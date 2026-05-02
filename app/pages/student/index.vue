@@ -3,7 +3,7 @@
     <div
       class="mt-20 rounded-tl-[12px] rounded-tr-[12px] h-screen border border-b-0 border-border bg-surface w-[40vw] p-4.5">
       <div class="mb-3.5">
-        <h2 id="selectTitle" class="font-serif text-[1.25rem] tracking-[-0.02em]">
+        <h2 id="selectTitle" class="font-serif text-3xl -[-0.02em]">
           Choose your Band Jam
         </h2>
         <p class="mt-1.5 text-muted">
@@ -66,6 +66,11 @@
 
       <p class="mt-3 text-[0.95rem] text-muted" role="status" aria-live="polite">
         {{ helperText }}
+      </p>
+
+      <p class="mt-3 text-muted">
+        Disclaimer: This site does <strong>not</strong> generate music. Your teacher uploads images for each
+        combination. If a Band Jam hasn't been added yet, you'll see a friendly message instead.
       </p>
     </div>
   </section>
