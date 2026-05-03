@@ -18,8 +18,9 @@ export function useBandJamState() {
     }),
   );
 
-  const sessionRef = authClient.useSession();
-  const isTeacherAuthenticated = computed(() => !!sessionRef.value?.data?.user);
+  const isTeacherAuthenticated = computed(
+    () => !!authClient.useSession().value?.data?.user,
+  );
 
   const selectionReady = computed(() => {
     return Boolean(
