@@ -130,7 +130,7 @@ const clamp = (value: number, min: number, max: number) => {
 const loadResult = async () => {
   const { style, instrument, difficulty } = studentSelection.value;
   if (!(style && instrument)) {
-    await navigateTo("/student/select");
+    await navigateTo("/student/");
     return;
   }
 

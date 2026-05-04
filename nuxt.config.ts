@@ -17,7 +17,17 @@ export default defineNuxtConfig({
 
   vite: {
     optimizeDeps: {
-      include: ["@supabase/supabase-js", "better-auth/vue"],
+      include: [
+        "@supabase/supabase-js",
+        "better-auth/vue",
+        "class-variance-authority",
+        "lucide-vue-next",
+        "reka-ui",
+        "@vueuse/core",
+        "clsx",
+        "tailwind-merge",
+        "motion-v",
+      ],
     },
     plugins: [tailwindcss()],
   },

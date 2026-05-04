@@ -18,13 +18,13 @@
 
         <div class="flex flex-wrap items-center gap-2.5">
           <button
-            class="cursor-pointer inline-flex items-center justify-center rounded-[8px] border border-border bg-white px-[14px] py-[10px] text-[1rem] font-semibold text-foreground shadow-[var(--shadow-soft-sm)] transition-[transform,box-shadow,background-color,border-color,opacity] duration-150 ease-[var(--ease)] hover:-translate-y-px hover:bg-card hover:shadow-[0_10px_18px_rgba(31,42,55,0.12)] active:translate-y-[1px] focus-visible:outline focus-visible:outline-3 focus-visible:outline-accent focus-visible:outline-offset-2"
+            class="cursor-pointer inline-flex items-center justify-center rounded-xl border border-border bg-white px-[14px] py-[10px] text-[1rem] font-semibold text-foreground shadow-[var(--shadow-soft-sm)] transition-[transform,box-shadow,background-color,border-color,opacity] duration-150 ease-[var(--ease)] hover:-translate-y-px hover:bg-card hover:shadow-[0_10px_18px_rgba(31,42,55,0.12)] active:translate-y-[1px] focus-visible:outline focus-visible:outline-3 focus-visible:outline-accent focus-visible:outline-offset-2"
             type="button" @click="socialSignIn">
             <Icon name="material-icon-theme:google" class="mr-2" />Sign in with
             Google
           </button>
           <button
-            class="cursor-pointer inline-flex items-center justify-center rounded-[8px] border border-border bg-card px-[14px] py-[10px] text-[1rem] font-semibold text-foreground transition-[transform,box-shadow,background-color,border-color,opacity] duration-150 ease-[var(--ease)] hover:-translate-y-px hover:bg-card active:translate-y-[1px] focus-visible:outline focus-visible:outline-3 focus-visible:outline-accent focus-visible:outline-offset-2"
+            class="cursor-pointer inline-flex items-center justify-center rounded-xl border border-border bg-card px-[14px] py-[10px] text-[1rem] font-semibold text-foreground transition-[transform,box-shadow,background-color,border-color,opacity] duration-150 ease-[var(--ease)] hover:-translate-y-px hover:bg-card active:translate-y-[1px] focus-visible:outline focus-visible:outline-3 focus-visible:outline-accent focus-visible:outline-offset-2"
             type="button" @click="navigateTo('/')">
             <Icon name="lucide:arrow-left" class="mr-2" /> Back
           </button>
@@ -40,29 +40,35 @@
 
 <script setup lang="ts">
 import { authClient } from "~~/lib/auth-client";
-const { isTeacherAuthenticated } = useBandJamState();
 
-if (isTeacherAuthenticated.value) {
-  await navigateTo("/teacher/admin");
+if (authClient.useSession().value?.data?.user) {
+  await navigateTo("/");
 }
 
 const errorMessage = ref("");
 
+// Watch for successful login and redirect to admin panel
+const session = authClient.useSession();
+watch(
+  () => session.value?.data?.user,
+  async (user) => {
+    if (user) {
+      await navigateTo("/teacher/admin");
+    }
+  }
+);
+
 const socialSignIn = async () => {
   try {
-    const res = await authClient.signIn.social({
+    // Let Better Auth handle the full OAuth flow with redirect
+    await authClient.signIn.social({
       provider: "google",
-      disableRedirect: true,
-      callbackURL: "/teacher/admin",
     });
-
-    if (res?.data?.url) {
-      await navigateTo(res.data.url, { external: true });
-    }
   } catch (err) {
-    errorMessage.value = "Sign-in failed. Please try again.";
+    const errMsg = err instanceof Error ? err.message : String(err);
+    errorMessage.value = `Sign-in failed: ${errMsg}`;
     // eslint-disable-next-line no-console
-    console.error("Google sign-in error", err);
+    console.error("Google sign-in error:", errMsg, err);
   }
 };
 </script>

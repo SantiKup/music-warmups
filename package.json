@@ -29,6 +29,7 @@
     "vue": "^3.5.32"
   },
   "devDependencies": {
+    "@iconify-json/lucide": "^1.2.105",
     "@tailwindcss/postcss": "^4.2.4",
     "@types/pg": "^8.20.0",
     "tailwindcss": "^4.2.4",
