@@ -41,25 +41,13 @@ const studentItems = [
   },
 ];
 
-const teacherItems = computed(() => {
-  if (isTeacher) {
-    return [
-      {
-        title: "Teacher Uploads",
-        url: "/teacher/admin",
-        icon: Upload,
-      },
-    ];
-  }
-
-  return [
-    {
-      title: "Teacher Login",
-      url: "/",
-      icon: LockKeyhole,
-    },
-  ];
-});
+const teacherItems = [
+  {
+    title: "Teacher Uploads",
+    url: "/teacher/admin",
+    icon: Upload,
+  },
+];
 
 const session = authClient.useSession();
 const user = computed(() => session.value.data?.user);
