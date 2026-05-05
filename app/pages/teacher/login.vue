@@ -40,20 +40,36 @@
 
 <script setup lang="ts">
 import { authClient } from "~~/lib/auth-client";
+import { isAuthorizedTeacher } from "~~/lib/teacher-emails";
 
-if (authClient.useSession().value?.data?.user) {
-  await navigateTo("/");
+const session = authClient.useSession();
+const user = session.value?.data?.user;
+
+if (user) {
+  const email = (user.email || "").toLowerCase();
+  // If student, redirect to student login
+  if (email.endsWith("@students.nido.cl")) {
+    await navigateTo("/student/login");
+  }
+  // If authorized teacher, redirect to admin
+  if (isAuthorizedTeacher(email)) {
+    await navigateTo("/teacher/admin");
+  }
 }
 
 const errorMessage = ref("");
 
-// Watch for successful login and redirect to admin panel
-const session = authClient.useSession();
+// Watch for successful login and redirect appropriately
 watch(
   () => session.value?.data?.user,
-  async (user) => {
-    if (user) {
-      await navigateTo("/teacher/admin");
+  async (newUser) => {
+    if (newUser) {
+      const email = (newUser.email || "").toLowerCase();
+      if (email.endsWith("@students.nido.cl")) {
+        await navigateTo("/student");
+      } else if (isAuthorizedTeacher(email)) {
+        await navigateTo("/teacher/admin");
+      }
     }
   }
 );

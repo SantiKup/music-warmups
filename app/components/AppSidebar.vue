@@ -23,8 +23,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
-
-const { isTeacherAuthenticated } = useBandJamState();
+import { isAuthorizedTeacher } from "~~/lib/teacher-emails";
 
 const studentItems = [
   {
@@ -40,7 +39,7 @@ const studentItems = [
 ];
 
 const teacherItems = computed(() => {
-  if (isTeacherAuthenticated.value) {
+  if (isTeacher.value) {
     return [
       {
         title: "Teacher Uploads",
@@ -60,8 +59,10 @@ const teacherItems = computed(() => {
 });
 
 const session = authClient.useSession();
-const userName = computed(() => session.value.data?.user?.name || "Teacher");
-const userImage = computed(() => session.value.data?.user?.image || "");
+const user = computed(() => session.value.data?.user);
+const userName = computed(() => user.value?.name || user.value?.email || "User");
+const userEmail = computed(() => user.value?.email || "");
+const userImage = computed(() => user.value?.image || "");
 const initials = computed(() => {
   return userName.value
     .split(" ")
@@ -70,6 +71,16 @@ const initials = computed(() => {
     .join("")
     .slice(0, 2)
     .toUpperCase();
+});
+
+const isStudentAuthenticated = computed(() => {
+  const email = (userEmail.value || "").toLowerCase();
+  return email.endsWith("@students.nido.cl");
+});
+
+const isTeacher = computed(() => {
+  const email = (userEmail.value || "").toLowerCase();
+  return isAuthorizedTeacher(email);
 });
 
 const { isMobile, setOpen, setOpenMobile } = useSidebar();
@@ -126,7 +137,7 @@ const handleSignOut = async () => {
           <SidebarMenu>
             <SidebarMenuItem v-for="item in studentItems" :key="item.title">
               <SidebarMenuButton as-child class="text-[0.98rem]">
-                <NuxtLink :to="item.url">
+                <NuxtLink :to="item.url" @click="closeSidebar">
                   <component :is="item.icon" />
                   <span class="font-medium">{{ item.title }}</span>
                 </NuxtLink>
@@ -144,7 +155,7 @@ const handleSignOut = async () => {
           <SidebarMenu>
             <SidebarMenuItem v-for="item in teacherItems" :key="item.title">
               <SidebarMenuButton as-child class="text-[0.98rem]">
-                <NuxtLink :to="item.url">
+                <NuxtLink :to="item.url" @click="closeSidebar">
                   <component :is="item.icon" />
                   <span class="font-medium">{{ item.title }}</span>
                 </NuxtLink>
@@ -156,7 +167,7 @@ const handleSignOut = async () => {
     </SidebarContent>
     <SidebarFooter>
       <SidebarMenu>
-        <SidebarMenuItem v-if="isTeacherAuthenticated" class="flex justify-between gap-3">
+        <SidebarMenuItem v-if="isTeacher" class="flex justify-between gap-3">
           <DropdownMenu>
             <DropdownMenuTrigger class="cursor-pointer">
               <div class="flex items-center gap-3">
@@ -175,6 +186,32 @@ const handleSignOut = async () => {
               <DropdownMenuSeparator />
               <DropdownMenuItem @click="navigateTo('/teacher/admin')">
                 Upload panel
+              </DropdownMenuItem>
+              <DropdownMenuItem @click="handleSignOut">Sign out</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </SidebarMenuItem>
+        <SidebarMenuItem v-else-if="isStudentAuthenticated" class="flex justify-between gap-3">
+          <DropdownMenu>
+            <DropdownMenuTrigger class="cursor-pointer">
+              <div class="flex items-center gap-3">
+                <Avatar>
+                  <AvatarFallback>{{ initials }}</AvatarFallback>
+                </Avatar>
+                <div>
+                  <div class="text-[0.95rem] font-semibold">{{ userName }}</div>
+                  <div class="text-[0.85rem] text-muted">Student account</div>
+                </div>
+              </div>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuLabel>Student</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem>
+                {{ userEmail }}
+              </DropdownMenuItem>
+              <DropdownMenuItem @click="navigateTo('/student')">
+                Back to selection
               </DropdownMenuItem>
               <DropdownMenuItem @click="handleSignOut">Sign out</DropdownMenuItem>
             </DropdownMenuContent>

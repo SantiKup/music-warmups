@@ -79,6 +79,10 @@
 <script setup lang="ts">
 import { INSTRUMENTS, STYLES } from "~/composables/useBandJamCatalog";
 
+definePageMeta({
+  middleware: "student-auth",
+});
+
 const {
   studentSelection,
   selectionReady,

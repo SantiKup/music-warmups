@@ -7,7 +7,7 @@
           Teacher Upload Panel
         </h2>
         <p class="mt-1.5 text-muted">
-          Upload style audio, part audio, and sheet music.
+          Upload style audio, part video, and sheet music.
         </p>
       </div>
 
@@ -84,9 +84,9 @@
 
             <div class="mt-3.5 grid gap-2.5 border-b border-border pb-3.5">
               <label class="grid gap-1.5">
-                <span class="font-semibold">Full demo Master</span>
+                <span class="font-semibold">Full Demo</span>
                 <input
-                  class="w-full rounded-[8px] border border-border bg-white px-3 py-[11px] focus-visible:outline-3 focus-visible:outline-accent focus-visible:outline-offset-2"
+                  class="w-full rounded-xl border border-border bg-white px-3 py-2.75 focus-visible:outline-3 focus-visible:outline-accent focus-visible:outline-offset-2"
                   type="file"
                   accept=".mp3,.wav,.ogg,.m4a,.aac,.webm,audio/mpeg,audio/wav,audio/ogg,audio/mp4,audio/aac,audio/webm"
                   @change="onFullJamChange" />
@@ -96,12 +96,12 @@
                 <button
                   class="inline-flex items-center justify-center rounded-lg border border-border-strong bg-primary-gradient bg-primary-gradient-shadow px-3.5 py-2.5 text-[1rem] font-semibold text-primary-foreground transition-[transform,box-shadow,background-color,border-color,opacity] duration-150 ease-(--ease) hover:-translate-y-px hover:bg-primary-gradient-dark hover:shadow-primary-gradient-dark active:translate-y-px focus-visible:outline-3 focus-visible:outline-accent focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-55 disabled:shadow-none disabled:translate-y-0"
                   type="button" :disabled="!canSaveFullJam" @click="saveFullJam">
-                  <Icon name="lucide:save" class="mr-2" /> Save Full demo
+                  <Icon name="lucide:save" class="mr-2" /> Save Full Demo
                 </button>
               </div>
 
               <div v-if="existingFullJamEntry">
-                <span class="font-semibold">Existing Full demo Master</span>
+                <span class="font-semibold">Existing Full Demo</span>
                 <audio :src="existingFullJamEntry.data" controls class="w-full"></audio>
                 <p class="text-[0.95rem] text-muted">
                   Name: {{ existingFullJamEntry.name }}
@@ -111,7 +111,7 @@
               <label class="grid gap-1.5">
                 <span class="font-semibold">Backing Track</span>
                 <input
-                  class="w-full rounded-[8px] border border-border bg-white px-3 py-[11px] focus-visible:outline-3 focus-visible:outline-accent focus-visible:outline-offset-2"
+                  class="w-full rounded-xl border border-border bg-white px-3 py-2.75 focus-visible:outline-3 focus-visible:outline-accent focus-visible:outline-offset-2"
                   type="file"
                   accept=".mp3,.wav,.ogg,.m4a,.aac,.webm,audio/mpeg,audio/wav,audio/ogg,audio/mp4,audio/aac,audio/webm"
                   @change="onBackingTrackChange" />
@@ -150,7 +150,7 @@
 
           <section class="grid gap-3">
             <h3 class="text-[1.05rem] font-serif tracking-[-0.01em]">
-              Level Audio
+              Part Video
             </h3>
             <p class="text-muted">
               Shared across all instruments for the selected style and part
@@ -158,8 +158,7 @@
             </p>
 
             <div class="grid gap-3.5 md:grid-rows-2 md:items-start">
-              <section class="rounded-[8px] border border-border bg-popover p-[14px]"
-                aria-labelledby="levelAudioStyleTitle">
+              <section class="rounded-xl border border-border bg-popover p-3.5" aria-labelledby="levelAudioStyleTitle">
                 <div class="mb-2.5 flex items-baseline justify-between gap-3">
                   <h3 id="levelAudioStyleTitle" class="m-0 font-serif text-[1.05rem] tracking-[-0.01em]">
                     Musical style
@@ -170,7 +169,7 @@
                 </div>
               </section>
 
-              <section class="rounded-[8px] border border-border bg-popover p-[14px]"
+              <section class="rounded-xl border border-border bg-popover p-3.5"
                 aria-labelledby="levelAudioDifficultyTitle">
                 <div class="mb-2.5 flex items-baseline justify-between gap-3">
                   <h3 id="levelAudioDifficultyTitle" class="m-0 font-serif text-[1.05rem] tracking-[-0.01em]">
@@ -185,11 +184,10 @@
 
             <div class="mt-3.5 grid gap-2.5 pb-3.5">
               <label class="grid gap-1.5">
-                <span class="font-semibold">Part demo</span>
+                <span class="font-semibold">Part Demo Video</span>
                 <input
                   class="w-full rounded-[8px] border border-border bg-white px-3 py-[11px] focus-visible:outline focus-visible:outline-3 focus-visible:outline-accent focus-visible:outline-offset-2"
-                  type="file"
-                  accept=".mp3,.wav,.ogg,.m4a,.aac,.webm,audio/mpeg,audio/wav,audio/ogg,audio/mp4,audio/aac,audio/webm"
+                  type="file" accept=".mp4,.webm,.mov,.m4v,video/mp4,video/webm,video/quicktime"
                   @change="onLevelJamChange" />
               </label>
               <p class="text-[0.95rem] text-muted">{{ levelJamFileName }}</p>
@@ -197,7 +195,7 @@
                 <button
                   class="inline-flex items-center justify-center rounded-lg border border-border-strong bg-primary-gradient bg-primary-gradient-shadow px-3.5 py-2.5 text-[1rem] font-semibold text-primary-foreground transition-[transform,box-shadow,background-color,border-color,opacity] duration-150 ease-(--ease) hover:-translate-y-px hover:bg-primary-gradient-dark hover:shadow-primary-gradient-dark active:translate-y-px focus-visible:outline-3 focus-visible:outline-accent focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-55 disabled:shadow-none disabled:translate-y-0"
                   type="button" :disabled="!canSaveLevelJam" @click="saveLevelJam">
-                  <Icon name="lucide:save" class="mr-2" /> Save Part demo
+                  <Icon name="lucide:save" class="mr-2" /> Save Part Demo Video
                 </button>
               </div>
 
@@ -210,8 +208,10 @@
                   {{ existingLevelAudioStatus }}
                 </p>
                 <div class="grid gap-1">
-                  <span class="font-semibold">Existing Level Full demo</span>
-                  <audio :src="existingLevelJamEntry.data" controls class="w-full mt-1"></audio>
+                  <span class="font-semibold">Existing Part Demo Video</span>
+                  <video v-if="isLevelJamVideo" :src="existingLevelJamEntry.data" controls preload="metadata"
+                    class="w-full mt-1 rounded-lg"></video>
+                  <audio v-else :src="existingLevelJamEntry.data" controls class="w-full mt-1"></audio>
                   <p class="text-[0.95rem] text-muted">
                     Name: {{ existingLevelJamEntry.name }}
                   </p>
@@ -378,6 +378,10 @@ const existingLevelAudioStatus = ref("");
 
 const adminIsPdf = ref(false);
 const adminPreviewSrc = ref("");
+
+const isLevelJamVideo = computed(() => {
+  return (existingLevelJamEntry.value?.type || "").startsWith("video/");
+});
 
 const existingSheetIsPdf = computed(
   () => existingSheetEntry.value?.type === "application/pdf",
@@ -597,6 +601,13 @@ const isSupportedAudioFile = (file: File): boolean => {
   );
 };
 
+const isSupportedVideoFile = (file: File): boolean => {
+  return (
+    file.type.startsWith("video/") ||
+    /\.(mp4|webm|mov|m4v)$/i.test(file.name)
+  );
+};
+
 const onFullJamChange = (event: Event) => {
   styleAudioStatus.value = "";
   const nextFile = getFileFromEvent(event);
@@ -627,9 +638,9 @@ const onLevelJamChange = (event: Event) => {
   levelAudioStatus.value = "";
   const nextFile = getFileFromEvent(event);
 
-  if (nextFile && !isSupportedAudioFile(nextFile)) {
+  if (nextFile && !isSupportedVideoFile(nextFile)) {
     levelJamFile.value = null;
-    levelAudioStatus.value = "Choose an MP3, WAV, OGG, M4A, AAC, or WEBM file.";
+    levelAudioStatus.value = "Choose an MP4, WEBM, MOV, or M4V video file.";
     return;
   }
 
@@ -685,7 +696,7 @@ const saveFullJam = () => {
   saveStyleAudio(
     "full_jam",
     fullJamFile,
-    "Full jam master saved successfully.",
+    "Full jam saved successfully.",
   );
 };
 
@@ -710,11 +721,11 @@ const saveLevelJam = async () => {
       style: selectedStyle.value,
       difficulty: selectedDifficulty.value,
     });
-    levelAudioStatus.value = "Level full jam saved successfully.";
+    levelAudioStatus.value = "Part demo video saved successfully.";
     await checkExistingLevelAudio();
   } catch (error: unknown) {
     levelAudioStatus.value =
-      error instanceof Error ? error.message : "Could not save level audio.";
+      error instanceof Error ? error.message : "Could not save part demo video.";
   }
 };
 

@@ -21,7 +21,7 @@
       </div>
 
 
-      <div class="grid w-full max-w-105 gap-2 mt-4 space-y-2" aria-label="Audio playback">
+      <div class="grid w-full max-w-105 gap-2 mt-4 space-y-2" aria-label="Media playback">
         <div class="grid gap-1 md:grid-rows">
           <span class="font-serif text-[0.95rem] font-bold">Full demo</span>
           <div class="min-w-0 text-[0.95rem] text-muted">
@@ -47,7 +47,11 @@
         <div class="grid gap-1 md:grid-rows">
           <span class="font-serif text-[0.95rem] font-bold">Level demo</span>
           <div class="min-w-0 text-[0.95rem] text-muted">
-            <audio v-if="levelJamEntry" class="block w-full" controls preload="none">
+            <video v-if="levelJamEntry && isLevelJamVideo" class="block w-full rounded-lg" controls preload="metadata">
+              <source :src="levelJamEntry.data" :type="levelJamEntry.type" />
+              Video format not supported by this browser.
+            </video>
+            <audio v-else-if="levelJamEntry" class="block w-full" controls preload="none">
               <source :src="levelJamEntry.data" :type="levelJamEntry.type" />
               Audio format not supported by this browser.
             </audio>
@@ -95,6 +99,10 @@
 <script setup lang="ts">
 import { DIFFICULTIES, type AssetEntry } from "~/composables/useBandJamCatalog";
 
+definePageMeta({
+  middleware: "student-auth",
+});
+
 const { studentSelection, selectionReady, setStudentField } = useBandJamState();
 
 if (!selectionReady.value) {
@@ -114,10 +122,11 @@ const levelJamEntry = ref<AssetEntry | null>(null);
 const backingTrackEntry = ref<AssetEntry | null>(null);
 const isLoading = ref(true);
 const loadError = ref("");
-const containerRef = ref<HTMLElement | null>(null);
-const isResizing = ref(false);
 
 const isPdf = computed(() => sheetEntry.value?.type === "application/pdf");
+const isLevelJamVideo = computed(() => {
+  return (levelJamEntry.value?.type || "").startsWith("video/");
+});
 const partLabel = computed(() => {
   return studentSelection.value.difficulty
     ? `Part ${studentSelection.value.difficulty}`

@@ -1,17 +1,16 @@
 import { authClient } from "~~/lib/auth-client";
-import { isAuthorizedTeacher } from "~~/lib/teacher-emails";
 
 export default defineNuxtRouteMiddleware(async (to) => {
   const { data: session } = await authClient.useSession(useFetch);
   const user = session.value?.user;
 
   if (!user) {
-    return navigateTo("/teacher/login");
+    return navigateTo("/student/login");
   }
 
-  // Ensure the user is an authorized teacher
+  // Ensure the user is a student (email ends with @students.nido.cl)
   const email = (user.email || "").toLowerCase();
-  if (!isAuthorizedTeacher(email)) {
+  if (!email.endsWith("@students.nido.cl")) {
     return navigateTo("/teacher/login");
   }
 });
