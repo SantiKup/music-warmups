@@ -153,7 +153,7 @@ const handleSignOut = async () => {
         </SidebarGroupContent>
       </SidebarGroup>
 
-      <SidebarGroup>
+      <SidebarGroup v-if="isTeacher">
         <SidebarGroupLabel class="font-serif text-[0.72rem] uppercase tracking-[0.16em] text-muted">
           Teacher
         </SidebarGroupLabel>
