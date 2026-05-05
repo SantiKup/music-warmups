@@ -13,7 +13,7 @@ export const auth = betterAuth({
     fallback: "http://localhost:3000",
   },
   emailAndPassword: {
-    enabled: true,
+    enabled: false,
   },
   socialProviders: {
     google: {
@@ -26,7 +26,7 @@ export const auth = betterAuth({
     },
   },
 
-  // Intercept user creation during OAuth callback and validate authorized teachers.
+  // Intercept user creation during OAuth callback and validate authorized roles.
   databaseHooks: {
     user: {
       create: {
@@ -38,16 +38,13 @@ export const auth = betterAuth({
             ctx.path === "/callback/:id" ||
             (ctx.path && ctx.path.startsWith("/callback"))
           ) {
-            // For Google OAuth, only allow authorized teacher emails
-            if (!AUTHORIZED_TEACHER_EMAILS.includes(email)) {
-              throw new Error("email_not_allowed");
-            }
-          }
+            // For Google OAuth, allow authorized teachers or students with @students.nido.cl
+            const isAuthorizedTeacher =
+              AUTHORIZED_TEACHER_EMAILS.includes(email);
+            const isStudent = email.endsWith("@students.nido.cl");
 
-          // For email/password registration (students), validate @students.nido.cl
-          if (ctx.path === "/sign-up/email" || ctx.path?.includes("/sign-up")) {
-            if (!email.endsWith("@students.nido.cl")) {
-              throw new Error("invalid_student_email");
+            if (!isAuthorizedTeacher && !isStudent) {
+              throw new Error("email_not_allowed");
             }
           }
 

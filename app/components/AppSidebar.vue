@@ -25,12 +25,15 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { isAuthorizedTeacher } from "~~/lib/teacher-emails";
 
-const studentItems = [
+const globalItems = [
   {
     title: "Home",
     url: "/",
     icon: Home,
   },
+]
+
+const studentItems = [
   {
     title: "Choose Band Jam",
     url: "/student",
@@ -39,7 +42,7 @@ const studentItems = [
 ];
 
 const teacherItems = computed(() => {
-  if (isTeacher.value) {
+  if (isTeacher) {
     return [
       {
         title: "Teacher Uploads",
@@ -129,6 +132,21 @@ const handleSignOut = async () => {
     </SidebarHeader>
 
     <SidebarContent class="gap-3">
+      <SidebarGroup>
+        <SidebarGroupContent>
+          <SidebarMenu>
+            <SidebarMenuItem v-for="item in globalItems" :key="item.title">
+              <SidebarMenuButton as-child class="text-[0.98rem]">
+                <NuxtLink :to="item.url" @click="closeSidebar">
+                  <component :is="item.icon" />
+                  <span class="font-medium">{{ item.title }}</span>
+                </NuxtLink>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+
       <SidebarGroup>
         <SidebarGroupLabel class="font-serif text-[0.72rem] uppercase tracking-[0.16em] text-muted">
           Student
