@@ -1,7 +1,7 @@
 <template>
   <section aria-labelledby="teacherLoginTitle" class="flex justify-center items-center">
     <div
-      class="mt-20 rounded-tl-[12px] rounded-tr-[12px] h-[calc(100vh-205px)] border border-b-0 border-border bg-surface w-[40vw] p-4.5">
+      class="mt-20 rounded-tl-[12px] rounded-tr-[12px] h-screen border border-b-0 border-border bg-surface w-[40vw] p-4.5">
       <div class="mb-3.5">
         <h2 id="teacherLoginTitle" class="font-serif text-5xl tracking-[-0.02em]">
           Teacher Login
@@ -18,13 +18,13 @@
 
         <div class="flex flex-wrap items-center gap-2.5">
           <button
-            class="cursor-pointer inline-flex items-center justify-center rounded-xl border border-border bg-white px-[14px] py-[10px] text-[1rem] font-semibold text-foreground shadow-[var(--shadow-soft-sm)] transition-[transform,box-shadow,background-color,border-color,opacity] duration-150 ease-[var(--ease)] hover:-translate-y-px hover:bg-card hover:shadow-[0_10px_18px_rgba(31,42,55,0.12)] active:translate-y-[1px] focus-visible:outline focus-visible:outline-3 focus-visible:outline-accent focus-visible:outline-offset-2"
+            class="cursor-pointer inline-flex items-center justify-center rounded-xl border border-border bg-white px-3.5 py-2.5 text-[1rem] font-semibold text-foreground shadow-(--shadow-soft-sm) transition-[transform,box-shadow,background-color,border-color,opacity] duration-150 ease-(--ease) hover:-translate-y-px hover:bg-card hover:shadow-[0_10px_18px_rgba(31,42,55,0.12)] active:translate-y-px focus-visible:outline-3 focus-visible:outline-accent focus-visible:outline-offset-2"
             type="button" @click="socialSignIn">
             <Icon name="material-icon-theme:google" class="mr-2" />Sign in with
             Google
           </button>
           <button
-            class="cursor-pointer inline-flex items-center justify-center rounded-xl border border-border bg-card px-[14px] py-[10px] text-[1rem] font-semibold text-foreground transition-[transform,box-shadow,background-color,border-color,opacity] duration-150 ease-[var(--ease)] hover:-translate-y-px hover:bg-card active:translate-y-[1px] focus-visible:outline focus-visible:outline-3 focus-visible:outline-accent focus-visible:outline-offset-2"
+            class="cursor-pointer inline-flex items-center justify-center rounded-xl border border-border bg-card px-3.5 py-2.5 text-[1rem] font-semibold text-foreground transition-[transform,box-shadow,background-color,border-color,opacity] duration-150 ease-(--ease) hover:-translate-y-px hover:bg-card active:translate-y-px focus-visible:outline-3 focus-visible:outline-accent focus-visible:outline-offset-2"
             type="button" @click="navigateTo('/')">
             <Icon name="lucide:arrow-left" class="mr-2" /> Back
           </button>

@@ -186,11 +186,17 @@
               <label class="grid gap-1.5">
                 <span class="font-semibold">Part Demo Video</span>
                 <input
-                  class="w-full rounded-[8px] border border-border bg-white px-3 py-[11px] focus-visible:outline focus-visible:outline-3 focus-visible:outline-accent focus-visible:outline-offset-2"
+                  class="w-full rounded-xl border border-border bg-white px-3 py-2.75 focus-visible:outline-3 focus-visible:outline-accent focus-visible:outline-offset-2"
                   type="file" accept=".mp4,.webm,.mov,.m4v,video/mp4,video/webm,video/quicktime"
                   @change="onLevelJamChange" />
               </label>
               <p class="text-[0.95rem] text-muted">{{ levelJamFileName }}</p>
+
+              <div v-if="levelJamPreviewUrl" class="mt-1 grid gap-1">
+                <span class="font-semibold">Selected Part Demo Video</span>
+                <video :src="levelJamPreviewUrl" controls preload="metadata" class="w-full mt-1 rounded-lg"></video>
+              </div>
+
               <div class="mt-3.5 flex flex-wrap justify-end items-center gap-3">
                 <button
                   class="inline-flex items-center justify-center rounded-lg border border-border-strong bg-primary-gradient bg-primary-gradient-shadow px-3.5 py-2.5 text-[1rem] font-semibold text-primary-foreground transition-[transform,box-shadow,background-color,border-color,opacity] duration-150 ease-(--ease) hover:-translate-y-px hover:bg-primary-gradient-dark hover:shadow-primary-gradient-dark active:translate-y-px focus-visible:outline-3 focus-visible:outline-accent focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-55 disabled:shadow-none disabled:translate-y-0"
@@ -267,11 +273,10 @@
 
             <div class="grid gap-2.5">
               <label class="grid gap-1.5">
-                <span class="font-semibold">Band Jam file (image or PDF)</span>
+                <span class="font-semibold">Band Jam file (PDF)</span>
                 <input
                   class="w-full rounded-lg border border-border bg-white px-3 py-2.75 focus-visible:outline-3 focus-visible:outline-accent focus-visible:outline-offset-2"
-                  type="file" accept="image/png,image/jpeg,image/jpg,image/svg+xml,image/webp,application/pdf"
-                  @change="onSheetFileChange" />
+                  type="file" accept="application/pdf" @change="onSheetFileChange" />
               </label>
 
               <p class="text-[0.95rem] text-muted">{{ adminFileName }}</p>
@@ -375,6 +380,7 @@ const existingLevelJamEntry = ref<AssetEntry | null>(null);
 
 const existingStyleAudioStatus = ref("");
 const existingLevelAudioStatus = ref("");
+const levelJamPreviewUrl = ref("");
 
 const adminIsPdf = ref(false);
 const adminPreviewSrc = ref("");
@@ -447,7 +453,7 @@ const hasAdminSelection = computed(() =>
 
 const adminHelperText = computed(() => {
   if (!hasAdminSelection.value) {
-    return "Select style, instrument, part number, and choose an image or PDF.";
+    return "Select style, instrument, part number, and choose a PDF.";
   }
 
   if (!adminFile.value) {
@@ -638,6 +644,11 @@ const onLevelJamChange = (event: Event) => {
   levelAudioStatus.value = "";
   const nextFile = getFileFromEvent(event);
 
+  if (levelJamPreviewUrl.value) {
+    URL.revokeObjectURL(levelJamPreviewUrl.value);
+    levelJamPreviewUrl.value = "";
+  }
+
   if (nextFile && !isSupportedVideoFile(nextFile)) {
     levelJamFile.value = null;
     levelAudioStatus.value = "Choose an MP4, WEBM, MOV, or M4V video file.";
@@ -645,7 +656,16 @@ const onLevelJamChange = (event: Event) => {
   }
 
   levelJamFile.value = nextFile;
+  if (nextFile) {
+    levelJamPreviewUrl.value = URL.createObjectURL(nextFile);
+  }
 };
+
+onBeforeUnmount(() => {
+  if (levelJamPreviewUrl.value) {
+    URL.revokeObjectURL(levelJamPreviewUrl.value);
+  }
+});
 
 const onSheetFileChange = (event: Event) => {
   adminSaveStatus.value = "";
