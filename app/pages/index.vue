@@ -43,6 +43,9 @@
 </template>
 
 <script setup lang="ts">
+useSeoMeta({
+  title: "Login | BandJam"
+})
 definePageMeta({
   layout: false
 })

@@ -39,6 +39,10 @@
 import { authClient } from "~~/lib/auth-client";
 import { isAuthorizedTeacher } from "~~/lib/teacher-emails";
 
+useSeoMeta({
+  title: "Home | BandJam"
+})
+
 definePageMeta({
   middleware: "auth",
 });

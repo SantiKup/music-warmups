@@ -76,7 +76,7 @@
 
     <div class="flex-1">
       <div v-if="!isLoading && !isPdf">
-        <div class="rounded-[12px] border border-dashed border-border-strong bg-card p-[18px]">
+        <div class="rounded-[12px] border border-dashed border-border-strong bg-card p-4.5">
           <div class="font-serif font-semibold">No Band Jam uploaded yet.</div>
           <div class="mt-1 text-muted">
             Try another combination, or check back later.
@@ -102,6 +102,11 @@ import { DIFFICULTIES, type AssetEntry } from "~/composables/useBandJamCatalog";
 definePageMeta({
   middleware: "student-auth",
 });
+
+useSeoMeta({
+  title: "Student Panel | BandJam"
+})
+
 
 const { studentSelection, selectionReady, setStudentField } = useBandJamState();
 

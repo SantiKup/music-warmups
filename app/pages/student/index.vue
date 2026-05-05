@@ -79,6 +79,10 @@
 <script setup lang="ts">
 import { INSTRUMENTS, STYLES } from "~/composables/useBandJamCatalog";
 
+useSeoMeta({
+  title: "Student Selection | BandJam"
+})
+
 definePageMeta({
   middleware: "student-auth",
 });

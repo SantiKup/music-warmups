@@ -341,6 +341,11 @@ import type { AssetEntry } from "~/composables/useBandJamCatalog";
 
 type StyleAudioAssetType = "full_jam" | "backing_track";
 
+useSeoMeta({
+  title: "Teacher Panel | BandJam"
+})
+
+
 definePageMeta({
   middleware: "teacher-auth",
 });
