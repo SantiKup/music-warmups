@@ -6,12 +6,12 @@ export default defineNuxtRouteMiddleware(async (to) => {
   const user = session.value?.user;
 
   if (!user) {
-    return navigateTo("/teacher/login");
+    return navigateTo("/");
   }
 
   // Ensure the user is an authorized teacher
   const email = (user.email || "").toLowerCase();
   if (!isAuthorizedTeacher(email)) {
-    return navigateTo("/teacher/login");
+    return navigateTo("/");
   }
 });

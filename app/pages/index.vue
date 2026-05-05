@@ -20,7 +20,8 @@
                 <div class="mt-8 flex justify-center">
                   <button
                     class="inline-flex items-center justify-center rounded-xl border border-border bg-white px-4 py-3 text-[1rem] font-semibold text-foreground shadow-(--shadow-soft-sm) transition-[transform,box-shadow,background-color,border-color,opacity] duration-150 ease-(--ease) hover:-translate-y-px hover:bg-card hover:shadow-[0_10px_18px_rgba(31,42,55,0.12)] active:translate-y-px focus-visible:outline-3 focus-visible:outline-accent focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-55"
-                    type="button" :disabled="isLoading" @click="signInWithGoogle">
+                    :class="isLoading ? 'cursor-not-allowed' : 'cursor-pointer'" type="button" :disabled="isLoading"
+                    @click="signInWithGoogle">
                     <Icon v-if="isLoading" name="lucide:loader-2" class="mr-2 animate-spin" />
                     <Icon v-else name="material-icon-theme:google" class="mr-2" />
                     {{ isLoading ? 'Signing in...' : 'Sign in with Google' }}
@@ -46,7 +47,6 @@ definePageMeta({
   layout: false
 })
 import { useTimeout } from "@vueuse/core";
-import { useTime } from "motion-v";
 import { authClient } from "~~/lib/auth-client";
 import { isAuthorizedTeacher } from "~~/lib/teacher-emails";
 

@@ -6,7 +6,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
   const user = session.value?.user;
 
   if (!user) {
-    return navigateTo("/student/login");
+    return navigateTo("/");
   }
 
   // Allow both students and authorized teachers to access student views
@@ -16,6 +16,6 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
   if (!isStudent && !isTeacher) {
     // If not a student or authorized teacher, redirect to student login
-    return navigateTo("/student/login");
+    return navigateTo("/");
   }
 });

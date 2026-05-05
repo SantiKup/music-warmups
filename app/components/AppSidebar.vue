@@ -55,7 +55,7 @@ const teacherItems = computed(() => {
   return [
     {
       title: "Teacher Login",
-      url: "/teacher/login",
+      url: "/",
       icon: LockKeyhole,
     },
   ];
@@ -234,14 +234,6 @@ const handleSignOut = async () => {
               <DropdownMenuItem @click="handleSignOut">Sign out</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-        </SidebarMenuItem>
-        <SidebarMenuItem v-else>
-          <SidebarMenuButton as-child>
-            <NuxtLink to="/teacher/login">
-              <LockKeyhole class="mr-2 h-4 w-4" />
-              <span class="font-medium">Teacher login</span>
-            </NuxtLink>
-          </SidebarMenuButton>
         </SidebarMenuItem>
       </SidebarMenu>
     </SidebarFooter>
