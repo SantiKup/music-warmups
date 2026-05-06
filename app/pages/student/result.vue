@@ -23,7 +23,7 @@
 
       <div class="grid w-full max-w-105 gap-2 mt-4 space-y-2" aria-label="Media playback">
         <div class="grid gap-1 md:grid-rows">
-          <span class="font-serif text-[0.95rem] font-bold">Full demo</span>
+          <span class="font-serif text-[0.95rem] font-bold">Full Demo</span>
           <div class="min-w-0 text-[0.95rem] text-muted">
             <audio v-if="fullJamEntry" class="block w-full" controls preload="none">
               <source :src="fullJamEntry.data" :type="fullJamEntry.type" />
@@ -45,10 +45,10 @@
         </div>
 
         <div class="grid gap-1 md:grid-rows">
-          <span class="font-serif text-[0.95rem] font-bold">Level demo</span>
+          <span class="font-serif text-[0.95rem] font-bold">Level Demo</span>
           <div class="min-w-0 text-[0.95rem] text-muted">
-            <video v-if="levelJamEntry && isLevelJamVideo" class="block w-full rounded-lg" controls preload="metadata">
-              <source :src="levelJamEntry.data" :type="levelJamEntry.type" />
+            <video v-if="levelJamEntry && isLevelJamVideo" class="block w-full rounded-lg" :src="levelJamEntry.data"
+              controls preload="metadata">
               Video format not supported by this browser.
             </video>
             <audio v-else-if="levelJamEntry" class="block w-full" controls preload="none">
