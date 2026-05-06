@@ -2,16 +2,15 @@
   <main>
     <section aria-labelledby="loginTitle" class="grid min-h-screen place-items-center px-6 py-12 relative">
       <div class="w-full max-w-5xl">
-        <ClientOnly>
-          <UiBlurReveal :delay="0.2" :duration="0.75">
-            <div class="mb-8 text-center">
-              <h1 id="loginTitle" class="font-serif text-8xl italic inline-flex items-center justify-center">
-                <Icon name="mdi:music-clef-treble" class="mr-1" /> BandJam
-              </h1>
-              <h2 class="font-serif italic text-secondary-foreground text-3xl">&ldquo;A new way to jam.&rdquo;</h2>
-            </div>
-
-            <div v-if="isSessionLoaded" class="mx-auto mt-4 w-full max-w-2xl">
+        <div :delay="0.2" :duration="0.75">
+          <div class="mb-8 text-center">
+            <h1 id="loginTitle" class="font-serif text-8xl italic inline-flex items-center justify-center">
+              <Icon name="mdi:music-clef-treble" class="mr-1" /> BandJam
+            </h1>
+            <h2 class="font-serif italic text-secondary-foreground text-3xl">&ldquo;A new way to jam.&rdquo;</h2>
+          </div>
+          <transition name="fade-scale" mode="out-in">
+            <div v-if="isSessionLoaded && !isAuthenticated" key="signin" class="mx-auto mt-4 w-full max-w-2xl">
               <article class="rounded-3xl border border-border bg-surface p-8 shadow-[0_16px_40px_rgba(31,42,55,0.08)]">
                 <p class="text-sm font-semibold uppercase tracking-[0.2em] text-muted text-center">Sign-In</p>
                 <h3 class="mt-3 font-serif text-3xl tracking-[-0.02em] text-center">Start your jamming journey
@@ -29,8 +28,18 @@
                 </div>
               </article>
             </div>
-          </UiBlurReveal>
-        </ClientOnly>
+
+            <div v-else-if="isSessionLoaded && isAuthenticated" key="redirect" class="mx-auto mt-4 w-full max-w-2xl">
+              <article
+                class="rounded-3xl border border-border bg-surface p-8 shadow-[0_16px_40px_rgba(31,42,55,0.08)] flex flex-col items-center justify-center">
+                <Icon name="lucide:loader-2" class="h-8 w-8 animate-spin mb-4" />
+                <p class="font-serif text-2xl">Redirecting…</p>
+                <p class="text-muted mt-2">Taking you to your dashboard.</p>
+              </article>
+            </div>
+          </transition>
+
+        </div>
       </div>
     </section>
     <footer class="mx-auto w-screen -mt-10 h-10 px-4 pt-2.5 text-[0.92rem] text-muted bg-surface z-50">
@@ -58,6 +67,8 @@ const isLoading = ref(false);
 
 const session = authClient.useSession();
 const user = computed(() => session.value.data?.user);
+
+const isAuthenticated = computed(() => Boolean(user.value));
 
 watch(
   () => user.value,
@@ -95,3 +106,22 @@ const signInWithGoogle = async () => {
   }
 };
 </script>
+
+<style scoped>
+.fade-scale-enter-active,
+.fade-scale-leave-active {
+  transition: opacity 220ms cubic-bezier(.2, .8, .2, 1), transform 220ms cubic-bezier(.2, .8, .2, 1);
+}
+
+.fade-scale-enter-from,
+.fade-scale-leave-to {
+  opacity: 0;
+  transform: translateY(6px) scale(0.995);
+}
+
+.fade-scale-enter-to,
+.fade-scale-leave-from {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+</style>
