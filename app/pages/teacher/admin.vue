@@ -24,7 +24,8 @@
                 {{ selectedStyle || "Not selected" }}
               </div>
             </div>
-            <OptionPills :options="STYLES" :selected="selectedStyle" @select="selectedStyle = $event" />
+            <OptionPills :options="STYLES" :selected="selectedStyle" :status-by-option="styleStatusByOption"
+              @select="selectedStyle = $event" />
           </div>
 
           <div class="rounded-lg border border-border bg-popover p-3.5">
@@ -36,7 +37,8 @@
                 {{ selectedInstrument || "Not selected" }}
               </div>
             </div>
-            <OptionPills :options="INSTRUMENTS" :selected="selectedInstrument" @select="selectedInstrument = $event" />
+            <OptionPills :options="INSTRUMENTS" :selected="selectedInstrument"
+              :status-by-option="instrumentStatusByOption" @select="selectedInstrument = $event" />
           </div>
 
           <div class="rounded-lg border border-border bg-popover p-3.5">
@@ -48,7 +50,8 @@
                 {{ selectedDifficulty || "Not selected" }}
               </div>
             </div>
-            <OptionPills :options="DIFFICULTIES" :selected="selectedDifficulty" @select="selectedDifficulty = $event" />
+            <OptionPills :options="DIFFICULTIES" :selected="selectedDifficulty"
+              :status-by-option="difficultyStatusByOption" @select="selectedDifficulty = $event" />
           </div>
         </div>
       </section>
@@ -340,6 +343,7 @@ import {
 import type { AssetEntry } from "~/composables/useBandJamCatalog";
 
 type StyleAudioAssetType = "full_jam" | "backing_track";
+type PillStatus = "missing" | "existing";
 
 useSeoMeta({
   title: "Teacher Panel | BandJam"
@@ -354,6 +358,7 @@ const {
   uploadAssetFile,
   isSupabaseReady,
   getUploadedSheetAsset,
+  listUploadedAssets,
   getFullJamAsset,
   getLevelJamAsset,
   getBackingTrackAsset,
@@ -386,6 +391,10 @@ const existingLevelJamEntry = ref<AssetEntry | null>(null);
 const existingStyleAudioStatus = ref("");
 const existingLevelAudioStatus = ref("");
 const levelJamPreviewUrl = ref("");
+
+const styleStatusByOption = ref<Partial<Record<string, PillStatus>>>({});
+const instrumentStatusByOption = ref<Partial<Record<string, PillStatus>>>({});
+const difficultyStatusByOption = ref<Partial<Record<string, PillStatus>>>({});
 
 const adminIsPdf = ref(false);
 const adminPreviewSrc = ref("");
@@ -511,6 +520,85 @@ watch(
   [selectedStyle, selectedInstrument, selectedDifficulty, isSupabaseReady],
   () => {
     void checkExistingSheet();
+  },
+  { immediate: true },
+);
+
+const buildPillStatusMap = (
+  options: readonly string[],
+  existingValues: Set<string>,
+): Partial<Record<string, PillStatus>> => {
+  const result: Partial<Record<string, PillStatus>> = {};
+
+  for (const option of options) {
+    result[option] = existingValues.has(option) ? "existing" : "missing";
+  }
+
+  return result;
+};
+
+const checkSheetCoverageForPills = async () => {
+  styleStatusByOption.value = {};
+  instrumentStatusByOption.value = {};
+  difficultyStatusByOption.value = {};
+
+  if (!isSupabaseReady.value) return;
+
+  try {
+    if (selectedInstrument.value && selectedDifficulty.value) {
+      const records = await listUploadedAssets({
+        assetType: "sheet",
+        instrument: selectedInstrument.value,
+        difficulty: selectedDifficulty.value,
+      });
+      const existingStyles = new Set(records.map((record) => record.style));
+      styleStatusByOption.value = buildPillStatusMap(STYLES, existingStyles);
+    }
+
+    if (selectedStyle.value && selectedDifficulty.value) {
+      const records = await listUploadedAssets({
+        assetType: "sheet",
+        style: selectedStyle.value,
+        difficulty: selectedDifficulty.value,
+      });
+      const existingInstruments = new Set(
+        records
+          .map((record) => record.instrument)
+          .filter((value): value is string => Boolean(value)),
+      );
+      instrumentStatusByOption.value = buildPillStatusMap(
+        INSTRUMENTS,
+        existingInstruments,
+      );
+    }
+
+    if (selectedStyle.value && selectedInstrument.value) {
+      const records = await listUploadedAssets({
+        assetType: "sheet",
+        style: selectedStyle.value,
+        instrument: selectedInstrument.value,
+      });
+      const existingDifficulties = new Set(
+        records
+          .map((record) => record.difficulty)
+          .filter((value): value is string => Boolean(value)),
+      );
+      difficultyStatusByOption.value = buildPillStatusMap(
+        DIFFICULTIES,
+        existingDifficulties,
+      );
+    }
+  } catch {
+    styleStatusByOption.value = {};
+    instrumentStatusByOption.value = {};
+    difficultyStatusByOption.value = {};
+  }
+};
+
+watch(
+  [selectedStyle, selectedInstrument, selectedDifficulty, isSupabaseReady],
+  () => {
+    void checkSheetCoverageForPills();
   },
   { immediate: true },
 );

@@ -33,6 +33,13 @@ interface UploadAssetInput {
   instrument?: string | null;
 }
 
+interface ListUploadedAssetsInput {
+  assetType: AssetType;
+  style?: string;
+  difficulty?: string | null;
+  instrument?: string | null;
+}
+
 function slugify(value: string): string {
   return (
     String(value)
@@ -213,6 +220,40 @@ export function useBandJamAssets() {
     };
   };
 
+  const listUploadedAssets = async ({
+    assetType,
+    style,
+    difficulty,
+    instrument,
+  }: ListUploadedAssetsInput): Promise<AssetMetadata[]> => {
+    if (!isSupabaseReady.value || !supabase) return [];
+
+    let query = supabase
+      .from(assetsTable)
+      .select("*")
+      .eq("asset_type", assetType);
+
+    if (style !== undefined) {
+      query = query.eq("style", style);
+    }
+    if (difficulty !== undefined) {
+      query =
+        difficulty === null
+          ? query.is("difficulty", null)
+          : query.eq("difficulty", difficulty);
+    }
+    if (instrument !== undefined) {
+      query =
+        instrument === null
+          ? query.is("instrument", null)
+          : query.eq("instrument", instrument);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+    return (data || []) as AssetMetadata[];
+  };
+
   const getSheetAsset = async (
     style: string,
     difficulty: string,
@@ -305,6 +346,7 @@ export function useBandJamAssets() {
     isSupabaseReady,
     getSheetAsset,
     getUploadedSheetAsset,
+    listUploadedAssets,
     getFullJamAsset,
     getLevelJamAsset,
     getBackingTrackAsset,

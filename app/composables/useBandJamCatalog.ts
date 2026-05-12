@@ -9,6 +9,7 @@ export const STYLES = [
   "Latin",
   "Country",
   "Waltz",
+  "R&B/Soul",
 ] as const;
 
 export const INSTRUMENTS = [
@@ -16,9 +17,9 @@ export const INSTRUMENTS = [
   "Bb",
   "Eb",
   "F",
-  "Bass clef (upper)",
+  "Bass clef (Upper)",
   "Bass line (Bass guitar)",
-  "Bass line (Tuba), Harmony",
+  "Harmony (Guitar/Piano)",
   "Drumkit",
   "Mallets",
 ] as const;
