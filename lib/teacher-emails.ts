@@ -3,6 +3,7 @@ export const AUTHORIZED_TEACHER_EMAILS = [
   "jgibbs@nido.cl",
   "zhaihongmeng@gmail.com",
   "saguayo@nido.cl",
+  "charles.gibbs@students.nido.cl",
 ];
 
 export function isAuthorizedTeacher(email: string): boolean {
