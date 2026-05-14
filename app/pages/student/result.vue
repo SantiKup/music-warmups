@@ -160,7 +160,7 @@ const loadResult = async () => {
     const [sheet, fullJam, levelJam, backingTrack] = await Promise.all([
       getSheetAsset(style, difficulty, instrument),
       getFullJamAsset(style),
-      getLevelJamAsset(style, difficulty),
+      getLevelJamAsset(style, difficulty, instrument),
       getBackingTrackAsset(style),
     ]);
 

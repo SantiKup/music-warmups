@@ -160,7 +160,7 @@
               number.
             </p>
 
-            <div class="grid gap-3.5 md:grid-rows-2 md:items-start">
+            <div class="grid gap-3.5 md:grid-rows-3 md:items-start">
               <section class="rounded-xl border border-border bg-popover p-3.5" aria-labelledby="levelAudioStyleTitle">
                 <div class="mb-2.5 flex items-baseline justify-between gap-3">
                   <h3 id="levelAudioStyleTitle" class="m-0 font-serif text-[1.05rem] tracking-[-0.01em]">
@@ -180,6 +180,18 @@
                   </h3>
                   <div class="text-[0.95rem] text-muted">
                     {{ selectedDifficulty || "Not selected" }}
+                  </div>
+                </div>
+              </section>
+
+              <section class="rounded-xl border border-border bg-popover p-3.5"
+                aria-labelledby="levelAudioGroupTitle">
+                <div class="mb-2.5 flex items-baseline justify-between gap-3">
+                  <h3 id="levelAudioGroupTitle" class="m-0 font-serif text-[1.05rem] tracking-[-0.01em]">
+                    Applies to
+                  </h3>
+                  <div class="text-[0.95rem] text-muted">
+                    {{ selectedInstrumentGroupName }}
                   </div>
                 </div>
               </section>
@@ -340,6 +352,10 @@ import {
   INSTRUMENTS,
   STYLES,
 } from "~/composables/useBandJamCatalog";
+import {
+  getGroupIdForInstrument,
+  getGroupName,
+} from "~/composables/usePartDemoVideoGroups";
 import type { AssetEntry } from "~/composables/useBandJamCatalog";
 
 type StyleAudioAssetType = "full_jam" | "backing_track";
@@ -433,6 +449,16 @@ const adminFileName = computed(() =>
   adminFile.value ? `Selected: ${adminFile.value.name}` : "No file selected.",
 );
 
+const selectedInstrumentGroupId = computed(() => {
+  if (!selectedInstrument.value) return null;
+  return getGroupIdForInstrument(selectedInstrument.value as any);
+});
+
+const selectedInstrumentGroupName = computed(() => {
+  if (!selectedInstrumentGroupId.value) return "Not selected";
+  return getGroupName(selectedInstrumentGroupId.value);
+});
+
 const canSaveFullJam = computed(() =>
   Boolean(isSupabaseReady.value && selectedStyle.value && fullJamFile.value),
 );
@@ -446,6 +472,7 @@ const canSaveLevelJam = computed(() =>
     isSupabaseReady.value &&
     selectedStyle.value &&
     selectedDifficulty.value &&
+    selectedInstrument.value &&
     levelJamFile.value,
   ),
 );
@@ -667,6 +694,7 @@ const checkExistingLevelAudio = async () => {
     const lvl = await getLevelJamAsset(
       selectedStyle.value as string,
       selectedDifficulty.value as string,
+      selectedInstrument.value as string,
     );
     if (lvl) existingLevelJamEntry.value = lvl;
     existingLevelAudioStatus.value = lvl
@@ -681,7 +709,7 @@ const checkExistingLevelAudio = async () => {
 };
 
 watch(
-  [selectedStyle, selectedDifficulty, isSupabaseReady],
+  [selectedStyle, selectedDifficulty, selectedInstrument, isSupabaseReady],
   () => {
     void checkExistingLevelAudio();
   },
@@ -822,8 +850,15 @@ const saveBackingTrack = () => {
 };
 
 const saveLevelJam = async () => {
-  if (!(selectedStyle.value && selectedDifficulty.value && levelJamFile.value))
+  if (!(selectedStyle.value && selectedDifficulty.value && selectedInstrument.value && levelJamFile.value))
     return;
+
+  const selectedGroupId = getGroupIdForInstrument(selectedInstrument.value as any);
+  if (!selectedGroupId) {
+    levelAudioStatus.value =
+      "Select an instrument to determine which group this Part Demo Video should apply to.";
+    return;
+  }
 
   levelAudioStatus.value = "Uploading...";
 
@@ -833,6 +868,8 @@ const saveLevelJam = async () => {
       assetType: "level_jam",
       style: selectedStyle.value,
       difficulty: selectedDifficulty.value,
+      group: selectedGroupId,
+      applyToAllParts: true,
     });
     levelAudioStatus.value = "Part demo video saved successfully.";
     await checkExistingLevelAudio();

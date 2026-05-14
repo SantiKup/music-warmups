@@ -3,6 +3,7 @@ import {
   getDefaultSheetEntry,
   type AssetEntry,
 } from "~/composables/useBandJamCatalog";
+import type { PartDemoVideoGroupId } from "~/composables/usePartDemoVideoGroups";
 
 type AssetType = "sheet" | "full_jam" | "level_jam" | "backing_track";
 
@@ -11,6 +12,7 @@ interface AssetFilters {
   style: string;
   difficulty?: string | null;
   instrument?: string | null;
+  group?: string | null;
 }
 
 interface UploadedStorageData {
@@ -31,6 +33,8 @@ interface UploadAssetInput {
   style: string;
   difficulty?: string | null;
   instrument?: string | null;
+  group?: string | null;
+  applyToAllParts?: boolean;
 }
 
 interface ListUploadedAssetsInput {
@@ -38,6 +42,7 @@ interface ListUploadedAssetsInput {
   style?: string;
   difficulty?: string | null;
   instrument?: string | null;
+  group?: string | null;
 }
 
 function slugify(value: string): string {
@@ -66,6 +71,7 @@ function buildStoragePath(
   difficulty: string | null,
   instrument: string | null,
   fileName: string,
+  group: string | null = null,
 ): string {
   const cleanStyle = slugify(style);
   const cleanDifficulty = difficulty ? slugify(difficulty) : null;
@@ -79,6 +85,13 @@ function buildStoragePath(
     return `audio/full-jam/${cleanStyle}/${cleanFileName}`;
   }
   if (assetType === "level_jam") {
+    // If group is provided, use it; otherwise use the old path structure
+    if (group) {
+      if (!cleanDifficulty) {
+        return `audio/level-jam/${cleanStyle}/group-${group}/${cleanFileName}`;
+      }
+      return `audio/level-jam/${cleanStyle}/${cleanDifficulty}/group-${group}/${cleanFileName}`;
+    }
     return `audio/level-jam/${cleanStyle}/${cleanDifficulty}/${cleanFileName}`;
   }
   if (assetType === "backing_track") {
@@ -104,7 +117,13 @@ export function useBandJamAssets() {
 
   const applyAssetFilters = (
     query: any,
-    { asset_type, style, difficulty = null, instrument = null }: AssetFilters,
+    {
+      asset_type,
+      style,
+      difficulty = null,
+      instrument = null,
+      group = null,
+    }: AssetFilters,
   ) => {
     let filtered = query.eq("asset_type", asset_type).eq("style", style);
     filtered =
@@ -115,6 +134,8 @@ export function useBandJamAssets() {
       instrument === null
         ? filtered.is("instrument", null)
         : filtered.eq("instrument", instrument);
+    filtered =
+      group === null ? filtered.is("group", null) : filtered.eq("group", group);
     return filtered;
   };
 
@@ -225,6 +246,7 @@ export function useBandJamAssets() {
     style,
     difficulty,
     instrument,
+    group,
   }: ListUploadedAssetsInput): Promise<AssetMetadata[]> => {
     if (!isSupabaseReady.value || !supabase) return [];
 
@@ -247,6 +269,10 @@ export function useBandJamAssets() {
         instrument === null
           ? query.is("instrument", null)
           : query.eq("instrument", instrument);
+    }
+    if (group !== undefined) {
+      query =
+        group === null ? query.is("group", null) : query.eq("group", group);
     }
 
     const { data, error } = await query;
@@ -294,13 +320,42 @@ export function useBandJamAssets() {
   const getLevelJamAsset = async (
     style: string,
     difficulty: string,
+    instrument?: string,
   ): Promise<AssetEntry | null> => {
-    return getAssetByHierarchy({
+    let group: string | null = null;
+
+    // If an instrument is provided, look up its group
+    if (instrument) {
+      const { getGroupIdForInstrument } =
+        await import("~/composables/usePartDemoVideoGroups");
+      group = getGroupIdForInstrument(instrument as any) || null;
+    }
+
+    // Try exact difficulty for the group first
+    let found = await getAssetByHierarchy({
       asset_type: "level_jam",
       style,
       difficulty,
       instrument: null,
+      group,
     });
+
+    if (found) return found;
+
+    // Fallback: group-wide (difficulty = null)
+    if (group) {
+      found = await getAssetByHierarchy({
+        asset_type: "level_jam",
+        style,
+        difficulty: null,
+        instrument: null,
+        group,
+      });
+      if (found) return found;
+    }
+
+    // No group-level asset found
+    return null;
   };
 
   const getBackingTrackAsset = async (
@@ -320,6 +375,8 @@ export function useBandJamAssets() {
     style,
     difficulty = null,
     instrument = null,
+    group = null,
+    applyToAllParts = false,
   }: UploadAssetInput): Promise<AssetMetadata> => {
     const filePath = buildStoragePath(
       assetType,
@@ -327,19 +384,24 @@ export function useBandJamAssets() {
       difficulty,
       instrument,
       file.name,
+      group,
     );
     const uploadResult = await uploadFileToSupabase(file, filePath);
-
-    return upsertAssetMetadata({
+    const primary = await upsertAssetMetadata({
       asset_type: assetType,
       style,
-      difficulty,
-      instrument,
+      difficulty:
+        applyToAllParts && assetType === "level_jam" ? null : difficulty,
+      instrument:
+        applyToAllParts && assetType === "level_jam" ? null : instrument,
+      group,
       file_path: uploadResult.file_path,
       file_url: uploadResult.file_url,
       mime_type: uploadResult.mime_type,
       label: uploadResult.label,
     });
+
+    return primary;
   };
 
   return {
