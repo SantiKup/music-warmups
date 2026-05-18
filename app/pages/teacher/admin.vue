@@ -184,8 +184,7 @@
                 </div>
               </section>
 
-              <section class="rounded-xl border border-border bg-popover p-3.5"
-                aria-labelledby="levelAudioGroupTitle">
+              <section class="rounded-xl border border-border bg-popover p-3.5" aria-labelledby="levelAudioGroupTitle">
                 <div class="mb-2.5 flex items-baseline justify-between gap-3">
                   <h3 id="levelAudioGroupTitle" class="m-0 font-serif text-[1.05rem] tracking-[-0.01em]">
                     Applies to
@@ -869,7 +868,6 @@ const saveLevelJam = async () => {
       style: selectedStyle.value,
       difficulty: selectedDifficulty.value,
       group: selectedGroupId,
-      applyToAllParts: true,
     });
     levelAudioStatus.value = "Part demo video saved successfully.";
     await checkExistingLevelAudio();
