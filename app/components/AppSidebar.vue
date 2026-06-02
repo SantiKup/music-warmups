@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BookOpenText, Home, LockKeyhole, Music, Upload, X } from "lucide-vue-next";
+import { BookOpenText, Home, Upload, X } from "lucide-vue-next";
 import {
   Sidebar,
   SidebarContent,
