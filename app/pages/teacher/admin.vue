@@ -198,17 +198,20 @@
 
             <div class="mt-3.5 grid gap-2.5 pb-3.5">
               <label class="grid gap-1.5">
-                <span class="font-semibold">Part Demo Video</span>
+                <span class="font-semibold">Part Demo Media</span>
                 <input
                   class="w-full rounded-xl border border-border bg-white px-3 py-2.75 focus-visible:outline-3 focus-visible:outline-accent focus-visible:outline-offset-2"
-                  type="file" accept=".mp4,.webm,.mov,.m4v,video/mp4,video/webm,video/quicktime"
+                  type="file"
+                  accept=".mp4,.webm,.mov,.m4v,.mp3,.wav,.ogg,.m4a,.aac,.webm,video/mp4,video/webm,video/quicktime,audio/mpeg,audio/wav,audio/ogg,audio/mp4,audio/aac,audio/webm"
                   @change="onLevelJamChange" />
               </label>
               <p class="text-[0.95rem] text-muted">{{ levelJamFileName }}</p>
 
               <div v-if="levelJamPreviewUrl" class="mt-1 grid gap-1">
-                <span class="font-semibold">Selected Part Demo Video</span>
-                <video :src="levelJamPreviewUrl" controls preload="metadata" class="w-full mt-1 rounded-lg"></video>
+                <span class="font-semibold">Selected Part Demo Media</span>
+                <video v-if="isLevelJamPreviewVideo" :src="levelJamPreviewUrl" controls preload="metadata"
+                  class="w-full mt-1 rounded-lg"></video>
+                <audio v-else :src="levelJamPreviewUrl" controls class="w-full mt-1"></audio>
               </div>
 
               <div class="mt-3.5 flex flex-wrap justify-end items-center gap-3">
@@ -727,8 +730,8 @@ const isSupportedAudioFile = (file: File): boolean => {
   );
 };
 
-const isSupportedVideoFile = (file: File): boolean => {
-  return (
+const isSupportedLevelJamFile = (file: File): boolean => {
+  return isSupportedAudioFile(file) || (
     file.type.startsWith("video/") ||
     /\.(mp4|webm|mov|m4v)$/i.test(file.name)
   );
@@ -769,9 +772,10 @@ const onLevelJamChange = (event: Event) => {
     levelJamPreviewUrl.value = "";
   }
 
-  if (nextFile && !isSupportedVideoFile(nextFile)) {
+  if (nextFile && !isSupportedLevelJamFile(nextFile)) {
     levelJamFile.value = null;
-    levelAudioStatus.value = "Choose an MP4, WEBM, MOV, or M4V video file.";
+    levelAudioStatus.value =
+      "Choose an MP4, WEBM, MOV, M4V, MP3, WAV, OGG, M4A, AAC, or WEBM file.";
     return;
   }
 
@@ -780,6 +784,12 @@ const onLevelJamChange = (event: Event) => {
     levelJamPreviewUrl.value = URL.createObjectURL(nextFile);
   }
 };
+
+const isLevelJamPreviewVideo = computed(() => {
+  const file = levelJamFile.value;
+  if (!file) return true;
+  return file.type.startsWith("video/") || /\.(mp4|webm|mov|m4v)$/i.test(file.name);
+});
 
 onBeforeUnmount(() => {
   if (levelJamPreviewUrl.value) {
