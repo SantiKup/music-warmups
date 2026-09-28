@@ -11,7 +11,8 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
   // Ensure the user is either a student or authorized teacher
   const email = (user.email || "").toLowerCase();
-  const isStudent = email.endsWith("@students.nido.cl");
+  // TEMPORARY
+  const isStudent = true // email.endsWith("@students.nido.cl");
   const isTeacher = isAuthorizedTeacher(email);
 
   if (!isStudent && !isTeacher) {

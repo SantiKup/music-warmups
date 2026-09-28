@@ -11,6 +11,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
   // Allow both students and authorized teachers to access student views
   const email = (user.email || "").toLowerCase();
+  // TEMPORARY
   const isStudent = true // email.endsWith("@students.nido.cl");
   const isTeacher = isAuthorizedTeacher(email);
 
